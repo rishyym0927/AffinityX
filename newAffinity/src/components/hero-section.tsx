@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Play } from "lucide-react"
+import Link from "next/link"
 
 export function HeroSection() {
   return (
@@ -15,10 +16,12 @@ export function HeroSection() {
         className="absolute top-0 left-0 right-0 flex justify-between items-center p-4 sm:p-6 lg:p-8 z-10"
       >
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-[#FF0059] rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">A</span>
-          </div>
-          <span className="text-lg sm:text-xl font-semibold">Affinity</span>
+          <Link href="/" className="flex items-center space-x-2 group">
+            <div className="w-8 h-8 bg-[#FF0059] rounded-lg flex items-center justify-center group-hover:bg-[#FF0059]/90 transition-colors">
+              <span className="text-white font-bold text-sm">A</span>
+            </div>
+            <span className="text-lg sm:text-xl font-semibold group-hover:text-white/90 transition-colors">Affinity</span>
+          </Link>
         </div>
         <div className="flex items-center space-x-2 sm:space-x-4">
           <nav className="hidden md:flex items-center space-x-4 lg:space-x-6">
@@ -32,9 +35,11 @@ export function HeroSection() {
               Pricing
             </a>
           </nav>
-          <Button variant="outline" size="sm" className="border-gray-800 hover:border-[#FF0059] bg-transparent text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2 h-8 sm:h-9">
-            Sign In
-          </Button>
+          <Link href="/login">
+            <Button variant="outline" size="sm" className="border-gray-800 hover:border-[#FF0059] bg-transparent text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2 h-8 sm:h-9">
+              Sign In
+            </Button>
+          </Link>
         </div>
       </motion.nav>
 
@@ -78,13 +83,15 @@ export function HeroSection() {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-12 sm:mb-16 px-4 sm:px-6"
         >
-          <Button
-            size="lg"
-            className="w-full sm:w-auto bg-[#FF0059] hover:bg-[#FF0059]/90 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-medium text-base sm:text-lg group transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#FF0059]/25 min-h-[48px] touch-manipulation"
-          >
-            Get Started
-            <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
-          </Button>
+          <Link href="/signup">
+            <Button
+              size="lg"
+              className="w-full sm:w-auto bg-[#FF0059] hover:bg-[#FF0059]/90 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-medium text-base sm:text-lg group transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#FF0059]/25 min-h-[48px] touch-manipulation"
+            >
+              Get Started
+              <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
           <Button variant="ghost" size="lg" className="w-full sm:w-auto text-gray-400 hover:text-white px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg group min-h-[48px] touch-manipulation">
             <Play className="mr-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
             Watch Demo

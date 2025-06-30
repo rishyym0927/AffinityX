@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Sparkles, Check, Star, Users, Zap } from "lucide-react"
+import Link from "next/link"
 
 const benefits = [
   { icon: Users, text: "Join 10,000+ developers" },
@@ -73,14 +74,16 @@ export function CTASection() {
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center mb-8 sm:mb-12 px-2 sm:px-4">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="relative group w-full sm:w-auto">
               <div className="absolute inset-0 bg-[#FF0059] blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-300 rounded-2xl"></div>
-              <Button
-                size="lg"
-                className="relative bg-[#FF0059] hover:bg-[#FF0059]/90 text-white px-8 sm:px-12 py-4 sm:py-6 rounded-2xl font-semibold text-lg sm:text-xl group transition-all duration-300 shadow-2xl shadow-[#FF0059]/25 w-full sm:w-auto min-h-[56px] touch-manipulation"
-              >
-                <Sparkles className="mr-2 sm:mr-3 h-5 sm:h-6 w-5 sm:w-6 group-hover:rotate-12 transition-transform" />
-                Start Matching Now
-                <ArrowRight className="ml-2 sm:ml-3 h-5 sm:h-6 w-5 sm:w-6 group-hover:translate-x-1 transition-transform" />
-              </Button>
+              <Link href="/signup">
+                <Button
+                  size="lg"
+                  className="relative bg-[#FF0059] hover:bg-[#FF0059]/90 text-white px-8 sm:px-12 py-4 sm:py-6 rounded-2xl font-semibold text-lg sm:text-xl group transition-all duration-300 shadow-2xl shadow-[#FF0059]/25 w-full sm:w-auto min-h-[56px] touch-manipulation"
+                >
+                  <Sparkles className="mr-2 sm:mr-3 h-5 sm:h-6 w-5 sm:w-6 group-hover:rotate-12 transition-transform" />
+                  Start Matching Now
+                  <ArrowRight className="ml-2 sm:ml-3 h-5 sm:h-6 w-5 sm:w-6 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
             </motion.div>
 
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
