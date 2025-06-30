@@ -8,6 +8,7 @@ import { QuickStats } from "@/components/dashboard/quick-stats"
 import { useState } from "react"
 import { Heart, X, Zap, Sparkles, TrendingUp, Users, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Footer } from "@/components/footer"
 
 // Hardcoded user data
 const users = [
@@ -376,8 +377,10 @@ export default function DashboardPage() {
               </motion.div>
             </div>
           </div>
+          
         </div>
       </main>
+      <Footer />
     </div>
   )
 }
