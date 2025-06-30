@@ -15,7 +15,7 @@ export default function Home() {
         <FeaturesGrid />
         <CTASection />
         <TechStack />
-        <Footer />
+
       </main>
     </div>
   )
