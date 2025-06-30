@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion"
 import { Github, Twitter, Linkedin, Mail } from "lucide-react"
+import Link from "next/link"
 
 export function Footer() {
   return (
@@ -56,11 +57,17 @@ export function Footer() {
             >
               <h4 className="font-semibold mb-4 sm:mb-6 text-base sm:text-lg">Product</h4>
               <ul className="space-y-3 sm:space-y-4">
-                {["Features", "Pricing", "API", "Documentation", "Changelog"].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm touch-manipulation">
-                      {item}
-                    </a>
+                {[
+                  { label: "Features", href: "/#features" },
+                  { label: "Pricing", href: "/#pricing" },
+                  { label: "API", href: "/api" },
+                  { label: "Documentation", href: "/docs" },
+                  { label: "Changelog", href: "/changelog" }
+                ].map((item) => (
+                  <li key={item.label}>
+                    <Link href={item.href} className="text-gray-400 hover:text-white transition-colors text-sm touch-manipulation">
+                      {item.label}
+                    </Link>
                   </li>
                 ))}
               </ul>

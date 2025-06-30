@@ -9,6 +9,7 @@ import { useState } from "react"
 import { Heart, X, Zap, Sparkles, TrendingUp, Users, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Footer } from "@/components/footer"
+import Image from "next/image"
 
 // Hardcoded user data
 const users = [
@@ -19,12 +20,8 @@ const users = [
     location: "San Francisco, CA",
     bio: "Full-stack developer passionate about AI and machine learning. Love hiking and exploring new coffee shops.",
     interests: ["React", "Python", "AI/ML", "Hiking", "Coffee"],
-    profileImage: "/placeholder.svg?height=400&width=300",
-    images: [
-      "/placeholder.svg?height=400&width=300",
-      "/placeholder.svg?height=400&width=300",
-      "/placeholder.svg?height=400&width=300",
-    ],
+    profileImage: "/src/assets/default.jpg",
+    images: [],
     compatibility: 95,
     isOnline: true,
     lastSeen: "Active now",
@@ -37,8 +34,8 @@ const users = [
     location: "Austin, TX",
     bio: "DevOps engineer who loves building scalable systems. Weekend warrior on the basketball court.",
     interests: ["Kubernetes", "AWS", "Basketball", "Gaming", "Music"],
-    profileImage: "/placeholder.svg?height=400&width=300",
-    images: ["/placeholder.svg?height=400&width=300", "/placeholder.svg?height=400&width=300"],
+    profileImage: "/src/assets/default.jpg",
+    images: ["/src/assets/default.jpg", "/src/assets/default.jpg"],
     compatibility: 88,
     isOnline: false,
     lastSeen: "2 hours ago",
@@ -51,12 +48,12 @@ const users = [
     location: "Seattle, WA",
     bio: "Frontend developer with a passion for creating beautiful user experiences. Love traveling and photography.",
     interests: ["Vue.js", "Design", "Photography", "Travel", "Art"],
-    profileImage: "/placeholder.svg?height=400&width=300",
+    profileImage: "/src/assets/default.jpg",
     images: [
-      "/placeholder.svg?height=400&width=300",
-      "/placeholder.svg?height=400&width=300",
-      "/placeholder.svg?height=400&width=300",
-      "/placeholder.svg?height=400&width=300",
+      "/src/assets/default.jpg",
+      "/src/assets/default.jpg",
+      "/src/assets/default.jpg",
+      "/src/assets/default.jpg",
     ],
     compatibility: 92,
     isOnline: true,
@@ -70,8 +67,8 @@ const users = [
     location: "New York, NY",
     bio: "Mobile app developer specializing in React Native. Fitness enthusiast and tech blogger.",
     interests: ["React Native", "iOS", "Fitness", "Writing", "Startups"],
-    profileImage: "/placeholder.svg?height=400&width=300",
-    images: ["/placeholder.svg?height=400&width=300", "/placeholder.svg?height=400&width=300"],
+    profileImage: "/src/assets/default.jpg",
+    images: ["/src/assets/default.jpg", "/src/assets/default.jpg"],
     compatibility: 85,
     isOnline: false,
     lastSeen: "1 day ago",
@@ -84,11 +81,11 @@ const users = [
     location: "Los Angeles, CA",
     bio: "Data scientist turning complex data into actionable insights. Love cooking and exploring LA's food scene.",
     interests: ["Python", "Data Science", "Cooking", "Food", "Analytics"],
-    profileImage: "/placeholder.svg?height=400&width=300",
+    profileImage: "/src/assets/default.jpg",
     images: [
-      "/placeholder.svg?height=400&width=300",
-      "/placeholder.svg?height=400&width=300",
-      "/placeholder.svg?height=400&width=300",
+      "/src/assets/default.jpg",
+      "/src/assets/default.jpg",
+      "/src/assets/default.jpg",
     ],
     compatibility: 90,
     isOnline: true,
@@ -297,16 +294,18 @@ export default function DashboardPage() {
 
                 <div className="space-y-3">
                   {[
-                    { name: "Alex", image: "/placeholder.svg?height=40&width=40", time: "2m ago" },
-                    { name: "Jordan", image: "/placeholder.svg?height=40&width=40", time: "1h ago" },
-                    { name: "Casey", image: "/placeholder.svg?height=40&width=40", time: "3h ago" },
+                    { name: "Alex", image: "", time: "2m ago" },
+                    { name: "Jordan", image: "", time: "1h ago" },
+                    { name: "Casey", image: "", time: "3h ago" },
                   ].map((match, index) => (
                     <div
                       key={index}
                       className="flex items-center space-x-3 p-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
                     >
-                      <img
-                        src={match.image || "/placeholder.svg"}
+                      <Image
+                        width={40}
+                        height={40}
+                        src={match.image || "/default.jpg"}
                         alt={match.name}
                         className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 flex-shrink-0"
                       />

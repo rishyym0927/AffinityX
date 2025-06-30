@@ -1,7 +1,7 @@
 "use client"
 import { Heart, X, Zap, MapPin, Briefcase, Wifi, WifiOff } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { useState } from "react"
+import Image from "next/image"
 
 interface User {
   id: number
@@ -41,8 +41,11 @@ export function UserCard({ user, onLike, onReject, onSuperLike, isAnimating }: U
     <div className="w-full max-w-sm mx-auto bg-black/60 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl shadow-[#FF0059]/10 relative">
       {/* Image Section */}
       <div className="relative h-64 sm:h-80 overflow-hidden">
-        <img
-          src={user.images[currentImageIndex] || "/placeholder.svg"}
+        <Image
+          key={user.images[currentImageIndex]} 
+          width={800}
+          height={600}
+          src={user.images[currentImageIndex] || "/default.jpg"}
           alt={user.name}
           className="w-full h-full object-cover"
         />
@@ -106,13 +109,7 @@ export function UserCard({ user, onLike, onReject, onSuperLike, isAnimating }: U
             <h2 className="text-xl sm:text-2xl font-bold text-white truncate flex-1 mr-2">
               {user.name}, {user.age}
             </h2>
-            <Button
-              onClick={onSuperLike}
-              disabled={isAnimating}
-              className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 p-0 transition-all duration-300 hover:scale-110 disabled:opacity-50 flex-shrink-0"
-            >
-              <Zap className="h-4 w-4 text-white" />
-            </Button>
+
           </div>
 
           <div className="flex items-center text-white/60 text-sm mb-2">
@@ -146,25 +143,6 @@ export function UserCard({ user, onLike, onReject, onSuperLike, isAnimating }: U
               </span>
             )}
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex justify-center space-x-4">
-          <Button
-            onClick={onReject}
-            disabled={isAnimating}
-            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/20 hover:border-red-500/50 transition-all duration-300 hover:scale-110 disabled:opacity-50 group"
-          >
-            <X className="h-4 w-4 sm:h-5 sm:w-5 text-white/70 group-hover:text-red-500 transition-colors" />
-          </Button>
-
-          <Button
-            onClick={onLike}
-            disabled={isAnimating}
-            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-[#FF0059] to-[#FF0059]/80 hover:from-[#FF0059]/90 hover:to-[#FF0059]/70 border-2 border-[#FF0059] transition-all duration-300 hover:scale-110 disabled:opacity-50 group shadow-lg shadow-[#FF0059]/25"
-          >
-            <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-white group-hover:scale-110 transition-transform" />
-          </Button>
         </div>
       </div>
     </div>

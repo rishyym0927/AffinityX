@@ -487,7 +487,7 @@ export default function SignupPage() {
               <div className="w-40 h-40 mx-auto mb-8 bg-white/5 rounded-full flex items-center justify-center border-2 border-dashed border-white/30 hover:border-[#FF0059] transition-all duration-300 cursor-pointer group">
                 {formData.profilePicture ? (
                   <img
-                    src={URL.createObjectURL(formData.profilePicture) || "/placeholder.svg"}
+                    src={URL.createObjectURL(formData.profilePicture) || "/default.jpg"}
                     alt="Profile"
                     className="w-full h-full rounded-full object-cover"
                   />

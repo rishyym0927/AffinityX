@@ -6,11 +6,11 @@ import { Plus, X, Camera, ImageIcon } from "lucide-react"
 import { useState } from "react"
 
 const galleryImages = [
-  { id: 1, src: "/placeholder.svg?height=300&width=300", alt: "Profile photo 1", isPrimary: true },
-  { id: 2, src: "/placeholder.svg?height=300&width=300", alt: "Profile photo 2" },
-  { id: 3, src: "/placeholder.svg?height=300&width=300", alt: "Profile photo 3" },
-  { id: 4, src: "/placeholder.svg?height=300&width=300", alt: "Profile photo 4" },
-  { id: 5, src: "/placeholder.svg?height=300&width=300", alt: "Profile photo 5" },
+  { id: 1, src: "/src/assets/default.jpg", alt: "Profile photo 1", isPrimary: true },
+  { id: 2, src: "/src/assets/default.jpg", alt: "Profile photo 2" },
+  { id: 3, src: "/src/assets/default.jpg", alt: "Profile photo 3" },
+  { id: 4, src: "/src/assets/default.jpg", alt: "Profile photo 4" },
+  { id: 5, src: "/src/assets/default.jpg", alt: "Profile photo 5" },
 ]
 
 export function ProfileGallery() {
@@ -82,7 +82,7 @@ export function ProfileGallery() {
               onClick={() => setSelectedImage(image.id)}
             >
               <img
-                src={image.src || "/placeholder.svg"}
+                src={image.src || "/default.jpg"}
                 alt={image.alt}
                 className="w-full h-full object-cover rounded-2xl border border-white/10 group-hover:border-[#FF0059]/50 transition-all duration-300"
               />
@@ -142,7 +142,7 @@ export function ProfileGallery() {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={galleryImages.find((img) => img.id === selectedImage)?.src || "/placeholder.svg"}
+              src={galleryImages.find((img) => img.id === selectedImage)?.src || "/default.jpg"}
               alt="Selected photo"
               className="w-full h-full object-contain rounded-2xl"
             />

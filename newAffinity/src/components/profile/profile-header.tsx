@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Camera, Edit3, Share, MapPin, Briefcase, Calendar, Verified } from "lucide-react"
 import { useState } from "react"
+import Image from "next/image"
 
 export function ProfileHeader() {
   const [isEditing, setIsEditing] = useState(false)
@@ -24,7 +25,7 @@ export function ProfileHeader() {
           {/* Profile Image */}
           <div className="relative group">
             <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-br from-[#FF0059]/20 to-[#FF0059]/10 border-4 border-[#FF0059]/30 overflow-hidden">
-              <img src="/placeholder.svg?height=160&width=160" alt="Profile" className="w-full h-full object-cover" />
+              <Image width={160} height={160} src="/default.jpg" alt="Profile" className="w-full h-full object-cover" />
             </div>
             <button className="absolute bottom-2 right-2 w-10 h-10 bg-[#FF0059] hover:bg-[#FF0059]/90 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg shadow-[#FF0059]/25">
               <Camera className="h-5 w-5 text-white" />
