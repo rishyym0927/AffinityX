@@ -3,8 +3,10 @@
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Search, MessageCircle, Heart, UserCheck, User, Bell, Settings } from "lucide-react"
+import { Search, MessageCircle, Heart, UserCheck, User, Bell, Settings, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/contexts/auth-context"
+import { useState, useEffect, useRef } from "react"
 
 const navItems = [
   { name: "Search", href: "/dashboard", icon: Search },
@@ -16,6 +18,23 @@ const navItems = [
 
 export function DashboardNav() {
   const pathname = usePathname()
+  const { user, logout } = useAuth()
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false)
+      }
+    }
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showUserMenu])
 
   return (
     <motion.nav
@@ -78,8 +97,79 @@ export function DashboardNav() {
               <Settings className="h-5 w-5 text-white/70 hover:text-white transition-colors" />
             </Button>
 
-            <div className="w-10 h-10 bg-gradient-to-br from-[#FF0059]/20 to-[#FF0059]/10 rounded-full border-2 border-[#FF0059]/30 flex items-center justify-center cursor-pointer hover:border-[#FF0059]/50 transition-all duration-300">
-              <User className="h-5 w-5 text-[#FF0059]" />
+            {/* User Profile Dropdown */}
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center space-x-3 p-2 rounded-xl hover:bg-white/10 transition-all duration-300"
+              >
+                <div className="w-10 h-10 bg-gradient-to-br from-[#FF0059]/20 to-[#FF0059]/10 rounded-full border-2 border-[#FF0059]/30 flex items-center justify-center cursor-pointer hover:border-[#FF0059]/50 transition-all duration-300">
+                  {user?.avatar ? (
+                    <img src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" />
+                  ) : (
+                    <User className="h-5 w-5 text-[#FF0059]" />
+                  )}
+                </div>
+                <div className="hidden md:block text-left">
+                  <p className="text-sm font-medium text-white">{user?.name}</p>
+                  <p className="text-xs text-white/60">{user?.email}</p>
+                </div>
+              </button>
+
+              {/* Dropdown Menu */}
+              {showUserMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 top-full mt-2 w-64 bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-[#FF0059]/10 overflow-hidden z-50"
+                >
+                  <div className="p-4 border-b border-white/10">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[#FF0059]/20 to-[#FF0059]/10 rounded-full border-2 border-[#FF0059]/30 flex items-center justify-center">
+                        {user?.avatar ? (
+                          <img src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" />
+                        ) : (
+                          <User className="h-6 w-6 text-[#FF0059]" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-white">{user?.name}</p>
+                        <p className="text-sm text-white/60">{user?.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-2">
+                    <Link
+                      href="/profile"
+                      className="flex items-center space-x-3 w-full text-left px-3 py-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all duration-300"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <User className="h-4 w-4" />
+                      <span>View Profile</span>
+                    </Link>
+                    <Link
+                      href="/profile"
+                      className="flex items-center space-x-3 w-full text-left px-3 py-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all duration-300"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <Settings className="h-4 w-4" />
+                      <span>Settings</span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false)
+                        logout()
+                      }}
+                      className="flex items-center space-x-3 w-full text-left px-3 py-2 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </div>
 

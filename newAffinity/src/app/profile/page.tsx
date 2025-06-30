@@ -7,17 +7,20 @@ import { ProfileStats } from "@/components/profile/profile-stats"
 import { ProfileGallery } from "@/components/profile/profile-gallery"
 import { ProfileInfo } from "@/components/profile/profile-info"
 import { ProfileSettings } from "@/components/profile/profile-settings"
+import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useState } from "react"
+import { PublicRoute } from "@/components/auth/public-route"
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("overview")
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <DashboardNav />
+    <PublicRoute>
+      <div className="min-h-screen bg-black text-white">
+        <DashboardNav />
 
-      {/* Main Content with proper spacing from navbar */}
-      <main className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
+        {/* Main Content with proper spacing from navbar */}
+        <main className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           {/* Profile Header */}
           <ProfileHeader />
@@ -76,5 +79,6 @@ export default function ProfilePage() {
         </div>
       </main>
     </div>
+    </PublicRoute>
   )
 }

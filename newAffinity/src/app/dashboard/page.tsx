@@ -5,11 +5,12 @@ import { DashboardNav } from "@/components/dashboard/dashboard-nav"
 import { UserCard } from "@/components/dashboard/user-card"
 import { ActivityFeed } from "@/components/dashboard/activity-feed"
 import { QuickStats } from "@/components/dashboard/quick-stats"
+import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useState } from "react"
 import { Heart, X, Zap, Sparkles, TrendingUp, Users, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Footer } from "@/components/footer"
 import Image from "next/image"
+import { PublicRoute } from "@/components/auth/public-route"
 
 // Hardcoded user data
 const users = [
@@ -140,18 +141,19 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <DashboardNav />
+    <PublicRoute>
+      <div className="min-h-screen bg-black text-white">
+        <DashboardNav />
 
-      {/* Main Content with proper spacing from navbar */}
-      <main className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Flex-based responsive layout */}
-          <div className="flex flex-wrap gap-6 lg:gap-8">
-            {/* Left Sidebar - Stats & Activity */}
-            <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 space-y-6 order-2 lg:order-1">
-              <QuickStats likes={likedUsers.length} matches={12} superLikes={3} views={47} />
-              <ActivityFeed />
+        {/* Main Content with proper spacing from navbar */}
+        <main className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Flex-based responsive layout */}
+            <div className="flex flex-wrap gap-6 lg:gap-8">
+              {/* Left Sidebar - Stats & Activity */}
+              <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 space-y-6 order-2 lg:order-1">
+                <QuickStats likes={likedUsers.length} matches={12} superLikes={3} views={47} />
+                <ActivityFeed />
             </div>
 
             {/* Center - Main Card Area */}
@@ -381,5 +383,6 @@ export default function DashboardPage() {
       </main>
    
     </div>
+    </PublicRoute>
   )
 }

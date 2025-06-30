@@ -5,19 +5,22 @@ import { DashboardNav } from "@/components/dashboard/dashboard-nav"
 import { MatchesList } from "@/components/matches/matches-list"
 import { ActiveChats } from "@/components/matches/active-chats"
 import { MatchFilters } from "@/components/matches/match-filters"
+import { ProtectedRoute } from "@/components/auth/protected-route"
+import { PublicRoute } from "@/components/auth/public-route"
 
 export default function MatchesPage() {
   return (
-    <div className="min-h-screen bg-black text-white">
-      <DashboardNav />
+    <PublicRoute>
+      <div className="min-h-screen bg-black text-white">
+        <DashboardNav />
 
-      {/* Main Content with proper spacing from navbar */}
-      <main className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Page Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+        {/* Main Content with proper spacing from navbar */}
+        <main className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Page Header */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8"
           >
@@ -43,5 +46,6 @@ export default function MatchesPage() {
         </div>
       </main>
     </div>
+    </PublicRoute>
   )
 }

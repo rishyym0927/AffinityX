@@ -10,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowRight, ArrowLeft, Eye, EyeOff, Upload, Check, X } from "lucide-react"
 import { useState, type KeyboardEvent } from "react"
 import Link from "next/link"
+import { useAuth } from "@/contexts/auth-context"
+import { PublicRoute } from "@/components/auth/public-route"
+import { useRouter } from "next/navigation"
 
 interface FormData {
   firstName: string
@@ -63,6 +66,11 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [expectedQualitiesInput, setExpectedQualitiesInput] = useState("")
   const [socialHabitsInput, setSocialHabitsInput] = useState("")
+  const [error, setError] = useState("")
+  
+  const { signup, isLoading } = useAuth()
+  const router = useRouter()
+  
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
     lastName: "",
@@ -158,10 +166,24 @@ export default function SignupPage() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle signup logic here
-    console.log("Signup data:", formData)
+    setError("")
+    
+    // Basic validation
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+      setError("Please fill in all required fields")
+      return
+    }
+    
+    const fullName = `${formData.firstName} ${formData.lastName}`
+    const result = await signup(formData.email, formData.password, fullName)
+    
+    if (result.success) {
+      router.push("/dashboard")
+    } else {
+      setError(result.error || "Signup failed")
+    }
   }
 
   const renderStep = () => {
@@ -525,27 +547,28 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center px-6 py-12 relative overflow-hidden">
-      {/* Enhanced background effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#FF0059]/8 via-transparent to-[#FF0059]/4"></div>
-      <div className="absolute top-20 left-20 w-96 h-96 bg-[#FF0059]/6 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-20 right-20 w-80 h-80 bg-[#FF0059]/4 rounded-full blur-3xl animate-pulse delay-1000"></div>
+    <PublicRoute>
+      <div className="min-h-screen bg-black text-white flex items-center justify-center px-6 py-12 relative overflow-hidden">
+        {/* Enhanced background effects */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#FF0059]/8 via-transparent to-[#FF0059]/4"></div>
+        <div className="absolute top-20 left-20 w-96 h-96 bg-[#FF0059]/6 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-80 h-80 bg-[#FF0059]/4 rounded-full blur-3xl animate-pulse delay-1000"></div>
 
-      {/* Subtle grid pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,0,89,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,0,89,0.03)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,0,89,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,0,89,0.03)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
 
-      <div className="w-full max-w-3xl relative z-10">
-        {/* Enhanced header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-10"
-        >
-          <Link href="/" className="inline-flex items-center space-x-3 mb-10 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#FF0059] to-[#FF0059]/80 rounded-xl flex items-center justify-center shadow-lg shadow-[#FF0059]/25 group-hover:shadow-[#FF0059]/40 transition-all duration-300">
-              <span className="text-white font-black text-lg">A</span>
-            </div>
+        <div className="w-full max-w-3xl relative z-10">
+          {/* Enhanced header */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-10"
+          >
+            <Link href="/" className="inline-flex items-center space-x-3 mb-10 group">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FF0059] to-[#FF0059]/80 rounded-xl flex items-center justify-center shadow-lg shadow-[#FF0059]/25 group-hover:shadow-[#FF0059]/40 transition-all duration-300">
+                <span className="text-white font-black text-lg">A</span>
+              </div>
             <span className="text-2xl font-bold tracking-tight">Affinity</span>
           </Link>
 
@@ -597,6 +620,12 @@ export default function SignupPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-3xl p-10 shadow-2xl shadow-[#FF0059]/10"
         >
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit}>
             <AnimatePresence mode="wait">
               <motion.div
@@ -661,5 +690,6 @@ export default function SignupPage() {
         </motion.div>
       </div>
     </div>
+    </PublicRoute>
   )
 }

@@ -5,14 +5,17 @@ import { DashboardNav } from "@/components/dashboard/dashboard-nav"
 import { RequestsList } from "@/components/requests/requests-list"
 import { RequestStats } from "@/components/requests/request-stats"
 import { RequestFilters } from "@/components/requests/request-filters"
+import { ProtectedRoute } from "@/components/auth/protected-route"
+import { PublicRoute } from "@/components/auth/public-route"
 
 export default function RequestsPage() {
   return (
-    <div className="min-h-screen bg-black text-white">
-      <DashboardNav />
+    <PublicRoute>
+      <div className="min-h-screen bg-black text-white">
+        <DashboardNav />
 
-      {/* Main Content with proper spacing from navbar */}
-      <main className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
+        {/* Main Content with proper spacing from navbar */}
+        <main className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           {/* Page Header */}
           <motion.div
@@ -43,5 +46,6 @@ export default function RequestsPage() {
         </div>
       </main>
     </div>
+    </PublicRoute>
   )
 }
