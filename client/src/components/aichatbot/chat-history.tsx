@@ -23,7 +23,7 @@ export function ChatHistory() {
   const fetchChats = async () => {
     setIsLoading(true)
     try {
-      const res = await fetch(`http://localhost:5000/chat-history/${userId}`)
+      const res = await fetch(`https://affinityx.onrender.com/chat-history/${userId}`)
       const data = await res.json()
       setChatHistory(data)
     } catch (err) {

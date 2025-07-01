@@ -37,7 +37,7 @@ export function AIChatInterface() {
     setIsClient(true)
 
     // Connect socket
-    socket = io("http://localhost:5000")
+    socket = io("https://affinityx.onrender.com")
 
     socket.on("botReply", ({ botMessage, chatHistoryId }) => {
       const aiMessage: Message = {
