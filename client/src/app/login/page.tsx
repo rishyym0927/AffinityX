@@ -28,13 +28,11 @@ export default function LoginPage() {
     e.preventDefault()
     setError("")
     
-    const result = await login(formData.email, formData.password)
+    // Login functionality disabled - implement your own
+    setError("Login functionality is currently disabled. Please implement your own authentication.")
     
-    if (result.success) {
-      router.push("/dashboard")
-    } else {
-      setError(result.error || "Login failed")
-    }
+    // You can access the form data here for your own implementation:
+    console.log("Login form data:", formData)
   }
 
   return (

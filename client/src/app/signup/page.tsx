@@ -104,6 +104,33 @@ export default function SignupPage() {
   const strengthColors = ["bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-blue-500", "bg-green-500"]
 
   const handleNext = () => {
+    // Basic validation for each step
+    if (currentStep === 1) {
+      if (!formData.firstName || !formData.lastName || !formData.gender || !formData.age || !formData.location) {
+        setError("Please fill in all required fields")
+        return
+      }
+    }
+    
+    if (currentStep === 2) {
+      if (!formData.email || !formData.password || !formData.username) {
+        setError("Please fill in all required fields")
+        return
+      }
+      if (formData.password.length < 6) {
+        setError("Password must be at least 6 characters long")
+        return
+      }
+    }
+    
+    if (currentStep === 3) {
+      if (!formData.openness || !formData.relationType || !formData.pastRelationships) {
+        setError("Please complete all sections")
+        return
+      }
+    }
+    
+    setError("") // Clear any existing errors
     if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1)
     }
@@ -170,20 +197,39 @@ export default function SignupPage() {
     e.preventDefault()
     setError("")
     
-    // Basic validation
+    console.log("Form submission started", { currentStep, formData })
+    
+    // Comprehensive validation (keeping for UI consistency)
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
       setError("Please fill in all required fields")
       return
     }
     
-    const fullName = `${formData.firstName} ${formData.lastName}`
-    const result = await signup(formData.email, formData.password, fullName)
-    
-    if (result.success) {
-      router.push("/dashboard")
-    } else {
-      setError(result.error || "Signup failed")
+    if (!formData.gender || !formData.age || !formData.location) {
+      setError("Please complete your basic information")
+      return
     }
+    
+    if (!formData.username) {
+      setError("Please choose a username")
+      return
+    }
+    
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long")
+      return
+    }
+    
+    if (!formData.openness || !formData.relationType || !formData.pastRelationships) {
+      setError("Please complete your personal details")
+      return
+    }
+    
+    // Signup functionality disabled - implement your own
+    setError("Signup functionality is currently disabled. Please implement your own authentication.")
+    
+    // You can access all the form data here for your own implementation:
+    console.log("Complete form data:", formData)
   }
 
   const renderStep = () => {
@@ -621,9 +667,13 @@ export default function SignupPage() {
           className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-3xl p-10 shadow-2xl shadow-[#FF0059]/10"
         >
           {error && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-              <p className="text-red-400 text-sm">{error}</p>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl"
+            >
+              <p className="text-red-400 text-sm font-medium">{error}</p>
+            </motion.div>
           )}
           
           <form onSubmit={handleSubmit}>
@@ -655,10 +705,20 @@ export default function SignupPage() {
               {currentStep === steps.length ? (
                 <Button
                   type="submit"
-                  className="bg-gradient-to-r from-[#FF0059] to-[#FF0059]/90 hover:from-[#FF0059]/90 hover:to-[#FF0059]/80 text-white px-8 py-3 rounded-xl font-bold group transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-[#FF0059]/25"
+                  disabled={isLoading}
+                  className="bg-gradient-to-r from-[#FF0059] to-[#FF0059]/90 hover:from-[#FF0059]/90 hover:to-[#FF0059]/80 text-white px-8 py-3 rounded-xl font-bold group transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-[#FF0059]/25 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Account
-                  <Check className="ml-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Creating Account...
+                    </>
+                  ) : (
+                    <>
+                      Create Account
+                      <Check className="ml-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+                    </>
+                  )}
                 </Button>
               ) : (
                 <Button
@@ -688,8 +748,8 @@ export default function SignupPage() {
             </Link>
           </p>
         </motion.div>
+        </div>
       </div>
-    </div>
     </PublicRoute>
   )
 }

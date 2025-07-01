@@ -47,128 +47,39 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false) // Disabled auth loading
 
-  const isAuthenticated = !!user
+  // Disabled authentication - always false
+  const isAuthenticated = false
 
-  // Initialize auth state from localStorage
+  // Disabled auth initialization
   useEffect(() => {
-    const initializeAuth = () => {
-      try {
-        const storedUser = localStorage.getItem('affinity_user')
-        const token = localStorage.getItem('affinity_token')
-        
-        if (storedUser && token) {
-          setUser(JSON.parse(storedUser))
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error)
-        localStorage.removeItem('affinity_user')
-        localStorage.removeItem('affinity_token')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    initializeAuth()
+    // Authentication disabled - no initialization needed
+    setIsLoading(false)
   }, [])
 
-  // Mock login function - replace with actual API call
+  // Disabled login function
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    setIsLoading(true)
-    
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Mock validation - replace with actual API call
-      if (email && password.length >= 6) {
-        const mockUser: User = {
-          id: Date.now().toString(),
-          email,
-          name: email.split('@')[0],
-          avatar: '/default.jpg',
-          preferences: {
-            ageRange: [22, 35],
-            interests: ['Technology', 'AI', 'Web Development'],
-            location: 'Remote'
-          }
-        }
-        
-        const mockToken = 'mock_jwt_token_' + Date.now()
-        
-        // Store in localStorage
-        localStorage.setItem('affinity_user', JSON.stringify(mockUser))
-        localStorage.setItem('affinity_token', mockToken)
-        
-        setUser(mockUser)
-        return { success: true }
-      } else {
-        return { success: false, error: 'Invalid email or password' }
-      }
-    } catch (error) {
-      return { success: false, error: 'Login failed. Please try again.' }
-    } finally {
-      setIsLoading(false)
-    }
+    // Authentication disabled
+    return { success: false, error: 'Authentication is currently disabled' }
   }
 
-  // Mock signup function - replace with actual API call
+  // Disabled signup function
   const signup = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
-    setIsLoading(true)
-    
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Mock validation - replace with actual API call
-      if (email && password.length >= 6 && name.trim()) {
-        const mockUser: User = {
-          id: Date.now().toString(),
-          email,
-          name: name.trim(),
-          avatar: '/default.jpg',
-          preferences: {
-            ageRange: [22, 35],
-            interests: [],
-            location: ''
-          }
-        }
-        
-        const mockToken = 'mock_jwt_token_' + Date.now()
-        
-        // Store in localStorage
-        localStorage.setItem('affinity_user', JSON.stringify(mockUser))
-        localStorage.setItem('affinity_token', mockToken)
-        
-        setUser(mockUser)
-        return { success: true }
-      } else {
-        return { success: false, error: 'Please fill in all required fields' }
-      }
-    } catch (error) {
-      return { success: false, error: 'Signup failed. Please try again.' }
-    } finally {
-      setIsLoading(false)
-    }
+    // Signup disabled - you can implement your own authentication
+    return { success: false, error: 'Signup is currently disabled' }
   }
 
-  // Logout function
+  // Disabled logout function
   const logout = () => {
-    setUser(null)
-    localStorage.removeItem('affinity_user')
-    localStorage.removeItem('affinity_token')
-    // Force reload to clear all state and redirect to home
-    window.location.reload()
+    // Authentication disabled - no logout needed
+    console.log('Logout disabled')
   }
 
-  // Update user function
+  // Disabled update user function
   const updateUser = (userData: Partial<User>) => {
-    if (user) {
-      const updatedUser = { ...user, ...userData }
-      setUser(updatedUser)
-      localStorage.setItem('affinity_user', JSON.stringify(updatedUser))
-    }
+    // Authentication disabled - no user updates
+    console.log('User update disabled', userData)
   }
 
   const value: AuthContextType = {
