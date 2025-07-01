@@ -63,23 +63,68 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+    /* Prevent zoom on input focus in iOS Safari */
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     @apply bg-black text-white;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     /* Improve mobile scrolling */
     -webkit-overflow-scrolling: touch;
-    /* Prevent zoom on input focus in mobile Safari */
-    -webkit-text-size-adjust: 100%;
+    /* Better font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Prevent horizontal scroll on mobile */
+    overflow-x: hidden;
   }
   
-  /* Ensure minimum tap target size for mobile */
-  button, a, input, select, textarea {
+  /* Ensure minimum tap target size for mobile accessibility */
+  button, a, input, select, textarea, [role="button"] {
     min-height: 44px;
+    @apply touch-manipulation;
   }
   
   /* Improve touch responsiveness */
   * {
     -webkit-tap-highlight-color: rgba(255, 0, 89, 0.1);
+  }
+  
+  /* Better input handling on mobile */
+  input, textarea {
+    /* Prevent zoom on focus in iOS Safari */
+    font-size: 16px;
+  }
+  
+  @media (min-width: 640px) {
+    input, textarea {
+      font-size: 14px;
+    }
+  }
+  
+  /* Improve scrollable areas */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: #ff0059;
   }
 }
 

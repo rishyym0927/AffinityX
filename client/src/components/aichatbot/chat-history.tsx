@@ -52,30 +52,32 @@ export function ChatHistory() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6"
+      className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl h-[800px] flex flex-col"
     >
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Clock className="h-5 w-5 text-[#FF0059]" />
-          <h3 className="text-lg font-semibold text-white">Chat History</h3>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={fetchChats}
-            variant="ghost" 
-            size="sm" 
-            className="text-white/60 hover:text-white"
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </Button>
-          <Button variant="ghost" size="sm" className="text-white/60 hover:text-white">
-            Clear All
-          </Button>
+      <div className="pt-4 sm:p-6 border-b border-white/10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-[#FF0059]" />
+            <h3 className="text-lg font-semibold text-white">Chat History</h3>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              onClick={fetchChats}
+              variant="ghost" 
+              size="sm" 
+              className="text-white/60 hover:text-white"
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button variant="ghost" size="sm" className="text-white/60 hover:text-white">
+              Clear All
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3">
         {chatHistory.length === 0 ? (
           <p className="text-white/40 text-sm">No chats yet.</p>
         ) : (
@@ -111,12 +113,14 @@ export function ChatHistory() {
         )}
       </div>
 
-      <Button
-        variant="outline"
-        className="w-full mt-4 border-white/20 hover:border-[#FF0059]/50 bg-white/5 hover:bg-white/10 text-sm"
-      >
-        View All Conversations
-      </Button>
+      <div className="p-4 sm:p-6 border-t border-white/10">
+        <Button
+          variant="outline"
+          className="w-full border-white/20 hover:border-[#FF0059]/50 bg-white/5 hover:bg-white/10 text-sm"
+        >
+          View All Conversations
+        </Button>
+      </div>
     </motion.div>
   )
 }

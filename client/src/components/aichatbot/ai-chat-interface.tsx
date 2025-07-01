@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Send, Bot, User, Copy, ThumbsUp, ThumbsDown, Plus } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { io, Socket } from "socket.io-client"
 
 interface Message {
@@ -32,6 +32,9 @@ export function AIChatInterface() {
   const [isTyping, setIsTyping] = useState(false)
   const [isClient, setIsClient] = useState(false)
   const [currentChatId, setCurrentChatId] = useState<string | null>(null) // Track current chat ID
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+
 
   useEffect(() => {
     setIsClient(true)
@@ -111,7 +114,7 @@ export function AIChatInterface() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden h-full flex flex-col"
+      className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden h-[800px] flex flex-col"
     >
       {/* Chat Header */}
       <div className="p-4 sm:p-6 border-b border-white/10 bg-white/5">
@@ -208,6 +211,9 @@ export function AIChatInterface() {
             </div>
           </motion.div>
         )}
+        
+        {/* Scroll anchor */}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}
