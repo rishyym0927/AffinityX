@@ -3,8 +3,9 @@
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Send, Bot, User, Copy, ThumbsUp, ThumbsDown } from "lucide-react"
+import { Send, Bot, User, Copy, ThumbsUp, ThumbsDown, Plus } from "lucide-react"
 import { useState, useEffect } from "react"
+import { io, Socket } from "socket.io-client"
 
 interface Message {
   id: string
@@ -18,19 +19,46 @@ const initialMessages: Message[] = [
     id: "welcome-message",
     type: "ai",
     content:
-      "Hi! I'm your AI dating assistant. I can help you with conversation starters, dating advice, profile optimization, and relationship insights. What would you like to talk about?",
-    timestamp: new Date("2024-01-01T00:00:00.000Z"), // Use a fixed timestamp to avoid hydration issues
+      "Hey there! 👋 I'm your friendly AI dating companion. I'm here to chat with you about anything relationship-related - whether you need conversation starters, dating tips, advice on your profile, or just want to talk through your thoughts about dating. What's on your mind today?",
+    timestamp: new Date("2024-01-01T00:00:00.000Z"),
   },
 ]
+
+let socket: Socket
 
 export function AIChatInterface() {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [inputValue, setInputValue] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const [isClient, setIsClient] = useState(false)
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null) // Track current chat ID
 
   useEffect(() => {
     setIsClient(true)
+
+    // Connect socket
+    socket = io("http://localhost:5000")
+
+    socket.on("botReply", ({ botMessage, chatHistoryId }) => {
+      const aiMessage: Message = {
+        id: `ai-${Date.now()}-${Math.random()}`,
+        type: "ai",
+        content: botMessage.content,
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, aiMessage])
+      setIsTyping(false)
+      
+      // Update current chat ID if we received one (for new chats)
+      if (chatHistoryId && !currentChatId) {
+        setCurrentChatId(chatHistoryId)
+        console.log(`💬 New chat created with ID: ${chatHistoryId}`)
+      }
+    })
+
+    return () => {
+      socket.disconnect()
+    }
   }, [])
 
   const handleSendMessage = async () => {
@@ -47,29 +75,35 @@ export function AIChatInterface() {
     setInputValue("")
     setIsTyping(true)
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: `ai-${Date.now()}-${Math.random()}`,
-        type: "ai",
-        content: getAIResponse(inputValue),
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, aiMessage])
-      setIsTyping(false)
-    }, 1500)
+    // Hardcoded test data for now
+    const payload = {
+      userId: "12345",
+      chatHistoryId: currentChatId || "new", // Use current chat ID or "new" to create a new one
+      content: userMessage.content,
+      user_id: 12345, // for score POST
+      location: "Bangalore",
+      openness: "high",
+      interests: "hiking, coding, movies",
+      exp_qual: "B.Tech in CS",
+      relation_type: "long-term",
+      social_habits: "outgoing",
+      past_relations: "2 past relationships",
+      values: "honesty, growth, kindness",
+      style: "casual-modern",
+      traits: "empathetic, curious",
+      commitment: "high",
+      resolution: "peaceful, communicative",
+      image_url: "https://example.com/image.jpg",
+      score: 0.0,
+    }
+
+    socket.emit("sendMessage", payload)
   }
 
-  const getAIResponse = (input: string): string => {
-    const responses = [
-      "That's a great question! Here's what I'd suggest: Start with something related to their interests shown in their profile. For example, if they mention hiking, you could ask about their favorite trail or recent adventure.",
-      "I understand you're looking for dating advice. Remember, authenticity is key in any relationship. Be yourself and focus on building genuine connections rather than trying to impress.",
-      "For your profile, I recommend adding more specific details about your hobbies and what you're passionate about. This helps potential matches find common ground with you.",
-      "Communication is crucial in dating. Try to ask open-ended questions that encourage meaningful conversations rather than simple yes/no responses.",
-    ]
-    // Use a deterministic approach based on input length to avoid hydration issues
-    const index = input.length % responses.length
-    return responses[index]
+  const startNewChat = () => {
+    setCurrentChatId(null)
+    setMessages(initialMessages)
+    console.log("🆕 Starting new chat...")
   }
 
   return (
@@ -81,17 +115,31 @@ export function AIChatInterface() {
     >
       {/* Chat Header */}
       <div className="p-4 sm:p-6 border-b border-white/10 bg-white/5">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-[#FF0059] to-[#FF0059]/80 rounded-full flex items-center justify-center">
-            <Bot className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-white">AI Dating Assistant</h3>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-xs text-white/60">Online</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#FF0059] to-[#FF0059]/80 rounded-full flex items-center justify-center">
+              <Bot className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-white">AI Dating Assistant</h3>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-xs text-white/60">Online</span>
+                {currentChatId && (
+                  <span className="text-xs text-white/40">• Chat ID: {currentChatId.slice(-6)}</span>
+                )}
+              </div>
             </div>
           </div>
+          <Button
+            onClick={startNewChat}
+            variant="outline"
+            size="sm"
+            className="border-white/20 hover:border-[#FF0059]/50 bg-white/5 hover:bg-white/10 text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Chat
+          </Button>
         </div>
       </div>
 

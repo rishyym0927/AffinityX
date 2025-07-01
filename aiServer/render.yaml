@@ -1,0 +1,18 @@
+# Render Deployment Configuration
+# This file is automatically detected by Render
+
+# Build Command (leave empty for Node.js)
+# Build Command: npm install
+
+# Start Command
+# Start Command: npm start
+
+# Environment: Node
+
+# Auto-Deploy: Yes (connect to your GitHub repo)
+
+# Instance Type: Free
+
+# Region: Choose closest to your users
+
+# Health Check Path: / (optional, but recommended)
