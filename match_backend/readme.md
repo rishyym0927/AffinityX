@@ -1,0 +1,1 @@
+1) Run docker postgress and then inside that container urn that scema.sql and then everything is fine

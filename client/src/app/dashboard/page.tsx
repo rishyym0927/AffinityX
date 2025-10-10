@@ -11,89 +11,71 @@ import { Heart, X, Zap, Sparkles, TrendingUp, Users, MessageCircle } from "lucid
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { PublicRoute } from "@/components/auth/public-route"
+import { femaleUsers as users } from "@/data/user"
+import { recentMatches  } from "@/data/user"
 
-// Hardcoded user data
-const users = [
+
+
+// Daily Tips Collection
+const DAILY_TIPS = [
   {
-    id: 1,
-    name: "Sarah Chen",
-    age: 28,
-    location: "San Francisco, CA",
-    bio: "Full-stack developer passionate about AI and machine learning. Love hiking and exploring new coffee shops.",
-    interests: ["React", "Python", "AI/ML", "Hiking", "Coffee"],
-    profileImage: "/src/assets/default.jpg",
-    images: [],
-    compatibility: 95,
-    isOnline: true,
-    lastSeen: "Active now",
-    occupation: "Senior Software Engineer at Stripe",
+    text: "Profiles with detailed bios get 3x more matches. Make sure to showcase your personality and interests!",
+    buttonLabel: "Update My Profile",
   },
   {
-    id: 2,
-    name: "Marcus Rodriguez",
-    age: 32,
-    location: "Austin, TX",
-    bio: "DevOps engineer who loves building scalable systems. Weekend warrior on the basketball court.",
-    interests: ["Kubernetes", "AWS", "Basketball", "Gaming", "Music"],
-    profileImage: "/src/assets/default.jpg",
-    images: ["/src/assets/default.jpg", "/src/assets/default.jpg"],
-    compatibility: 88,
-    isOnline: false,
-    lastSeen: "2 hours ago",
-    occupation: "DevOps Lead at Vercel",
+    text: "Adding 4-6 photos increases your chances of getting a match by 72%. Show different sides of your personality!",
+    buttonLabel: "Add More Photos",
   },
   {
-    id: 3,
-    name: "Emily Watson",
-    age: 26,
-    location: "Seattle, WA",
-    bio: "Frontend developer with a passion for creating beautiful user experiences. Love traveling and photography.",
-    interests: ["Vue.js", "Design", "Photography", "Travel", "Art"],
-    profileImage: "/src/assets/default.jpg",
-    images: [
-      "/src/assets/default.jpg",
-      "/src/assets/default.jpg",
-      "/src/assets/default.jpg",
-      "/src/assets/default.jpg",
-    ],
-    compatibility: 92,
-    isOnline: true,
-    lastSeen: "Active now",
-    occupation: "Frontend Developer at GitHub",
+    text: "Users who respond within 24 hours are 25% more likely to get a date. Don't leave your matches waiting!",
+    buttonLabel: "Check Messages",
   },
   {
-    id: 4,
-    name: "Alex Thompson",
-    age: 30,
-    location: "New York, NY",
-    bio: "Mobile app developer specializing in React Native. Fitness enthusiast and tech blogger.",
-    interests: ["React Native", "iOS", "Fitness", "Writing", "Startups"],
-    profileImage: "/src/assets/default.jpg",
-    images: ["/src/assets/default.jpg", "/src/assets/default.jpg"],
-    compatibility: 85,
-    isOnline: false,
-    lastSeen: "1 day ago",
-    occupation: "Mobile Developer at Airbnb",
+    text: "Profiles mentioning hobbies get 40% more engagement. What makes you unique?",
+    buttonLabel: "Edit Interests",
   },
   {
-    id: 5,
-    name: "Jordan Kim",
-    age: 29,
-    location: "Los Angeles, CA",
-    bio: "Data scientist turning complex data into actionable insights. Love cooking and exploring LA's food scene.",
-    interests: ["Python", "Data Science", "Cooking", "Food", "Analytics"],
-    profileImage: "/src/assets/default.jpg",
-    images: [
-      "/src/assets/default.jpg",
-      "/src/assets/default.jpg",
-      "/src/assets/default.jpg",
-    ],
-    compatibility: 90,
-    isOnline: true,
-    lastSeen: "Active now",
-    occupation: "Data Scientist at Netflix",
+    text: "Be authentic! Profiles with genuine photos get 2x more super likes than heavily filtered ones.",
+    buttonLabel: "Review Photos",
   },
 ]
+
+// Using the first tip as the current daily tip
+const DAILY_TIP = DAILY_TIPS[0]
+
+// Profile Statistics (Initial Values)
+const INITIAL_STATS = {
+  matches: 12,
+  superLikes: 3,
+  views: 47,
+}
+
+// Quick Action Items
+const QUICK_ACTIONS = [
+  { icon: Users, label: "Browse by Location", action: "location" },
+  { icon: Sparkles, label: "Boost My Profile", action: "boost" },
+  { icon: Heart, label: "Who Liked Me", action: "likes" },
+  { icon: MessageCircle, label: "Unread Messages", action: "messages" },
+  { icon: TrendingUp, label: "Profile Insights", action: "insights" },
+]
+
+// No More Users Messages
+const NO_USERS_MESSAGE = {
+  title: "You're all caught up!",
+  description: "No more profiles to show right now. Check back later for new matches or expand your search criteria.",
+  primaryButton: "Start Over",
+  secondaryButton: "Adjust Filters",
+}
+
+// Progress Indicator Messages
+const PROGRESS_MESSAGES = [
+  "Keep swiping!",
+  "You're on fire!",
+  "Almost there!",
+  "profiles remaining",
+]
+
+
 
 export default function DashboardPage() {
   const [currentUserIndex, setCurrentUserIndex] = useState(0)
@@ -152,7 +134,12 @@ export default function DashboardPage() {
             <div className="flex flex-wrap gap-6 lg:gap-8">
               {/* Left Sidebar - Stats & Activity */}
               <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 space-y-6 order-2 lg:order-1">
-                <QuickStats likes={likedUsers.length} matches={12} superLikes={3} views={47} />
+                <QuickStats 
+                  likes={likedUsers.length} 
+                  matches={INITIAL_STATS.matches} 
+                  superLikes={INITIAL_STATS.superLikes} 
+                  views={INITIAL_STATS.views} 
+                />
                 <ActivityFeed />
             </div>
 
@@ -252,10 +239,9 @@ export default function DashboardPage() {
                     <div className="w-20 h-20 sm:w-24 sm:h-24 bg-[#FF0059]/20 rounded-full flex items-center justify-center mx-auto mb-6">
                       <Heart className="h-10 w-10 sm:h-12 sm:w-12 text-[#FF0059]" />
                     </div>
-                    <h2 className="text-2xl sm:text-3xl font-bold mb-4">You're all caught up!</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold mb-4">{NO_USERS_MESSAGE.title}</h2>
                     <p className="text-white/60 text-base sm:text-lg mb-8 max-w-md mx-auto px-4">
-                      No more profiles to show right now. Check back later for new matches or expand your search
-                      criteria.
+                      {NO_USERS_MESSAGE.description}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
                       <Button
@@ -266,13 +252,13 @@ export default function DashboardPage() {
                         }}
                         className="bg-[#FF0059] hover:bg-[#FF0059]/90 px-6 sm:px-8 py-3 rounded-xl font-semibold"
                       >
-                        Start Over
+                        {NO_USERS_MESSAGE.primaryButton}
                       </Button>
                       <Button
                         variant="outline"
                         className="border-white/20 hover:border-[#FF0059]/50 bg-white/5 hover:bg-white/10 px-6 sm:px-8 py-3 rounded-xl"
                       >
-                        Adjust Filters
+                        {NO_USERS_MESSAGE.secondaryButton}
                       </Button>
                     </div>
                   </motion.div>
@@ -295,11 +281,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-3">
-                  {[
-                    { name: "Alex", image: "", time: "2m ago" },
-                    { name: "Jordan", image: "", time: "1h ago" },
-                    { name: "Casey", image: "", time: "3h ago" },
-                  ].map((match, index) => (
+                  {recentMatches.map((match, index) => (
                     <div
                       key={index}
                       className="flex items-center space-x-3 p-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
@@ -341,11 +323,11 @@ export default function DashboardPage() {
                 </div>
 
                 <p className="text-white/80 text-sm leading-relaxed mb-4">
-                  Profiles with detailed bios get 3x more matches. Make sure to showcase your personality and interests!
+                  {DAILY_TIP.text}
                 </p>
 
                 <Button className="w-full bg-[#FF0059]/20 hover:bg-[#FF0059]/30 border border-[#FF0059]/30 text-[#FF0059] text-sm font-medium">
-                  Update My Profile
+                  {DAILY_TIP.buttonLabel}
                 </Button>
               </motion.div>
 
@@ -359,21 +341,16 @@ export default function DashboardPage() {
                 <h3 className="text-base sm:text-lg font-semibold text-white mb-4">Quick Actions</h3>
 
                 <div className="space-y-3">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start border-white/20 hover:border-[#FF0059]/50 bg-white/5 hover:bg-white/10 text-sm"
-                  >
-                    <Users className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span className="truncate">Browse by Location</span>
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start border-white/20 hover:border-[#FF0059]/50 bg-white/5 hover:bg-white/10 text-sm"
-                  >
-                    <Sparkles className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span className="truncate">Boost My Profile</span>
-                  </Button>
+                  {QUICK_ACTIONS.slice(0, 2).map((action, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      className="w-full justify-start border-white/20 hover:border-[#FF0059]/50 bg-white/5 hover:bg-white/10 text-sm"
+                    >
+                      <action.icon className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="truncate">{action.label}</span>
+                    </Button>
+                  ))}
                 </div>
               </motion.div>
             </div>

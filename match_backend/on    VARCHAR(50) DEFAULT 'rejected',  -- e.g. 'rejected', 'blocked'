@@ -1,0 +1,19 @@
+                                           Table "public.users"
+   Column   |            Type             | Collation | Nullable |                Default                 
+------------+-----------------------------+-----------+----------+----------------------------------------
+ user_id    | bigint                      |           | not null | nextval('users_user_id_seq'::regclass)
+ name       | character varying(100)      |           | not null | 
+ gender     | character(1)                |           |          | 
+ age        | smallint                    |           |          | 
+ city       | character varying(100)      |           |          | 
+ created_at | timestamp without time zone |           |          | now()
+ lat        | double precision            |           |          | 0
+ lon        | double precision            |           |          | 0
+Indexes:
+    "users_pkey" PRIMARY KEY, btree (user_id)
+Check constraints:
+    "users_age_check" CHECK (age >= 18 AND age <= 100)
+    "users_gender_check" CHECK (gender = ANY (ARRAY['M'::bpchar, 'F'::bpchar]))
+Referenced by:
+    TABLE "scores" CONSTRAINT "scores_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+
