@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/joho/godotenv"
 	"github.com/rishyym0927/match_backend/internal/api"
 	"github.com/rishyym0927/match_backend/internal/config"
 	"github.com/rishyym0927/match_backend/internal/core"
@@ -16,6 +17,11 @@ import (
 )
 
 func main() {
+	// Load environment variables from .env file
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using system environment variables")
+	}
+
 	cfg := config.Load()
 	ctx := context.Background()
 
@@ -56,3 +62,5 @@ func main() {
 	log.Println("🛑 Shutting down...")
 	_ = srv.Shutdown(context.Background())
 }
+
+//how to implememnt cors

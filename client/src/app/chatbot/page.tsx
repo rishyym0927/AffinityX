@@ -2,13 +2,13 @@
 
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { AIChatInterface } from "@/components/aichatbot/ai-chat-interface";
-import { PublicRoute } from "@/components/auth/public-route";
+import { ProtectedRoute } from "@/components/auth/protected-route";
 import { ChatHistory } from "@/components/aichatbot/chat-history";
 import { ChatSuggestions } from "@/components/aichatbot/chat-suggestions";
 import { motion } from "framer-motion";
 export default function ChatbotPage() {
   return (
-    <PublicRoute>
+    <ProtectedRoute>
        <div className="min-h-screen bg-black text-white">
       <DashboardNav />
 
@@ -32,6 +32,6 @@ export default function ChatbotPage() {
         </div>
       </main>
     </div>
-    </PublicRoute>
+    </ProtectedRoute>
   );
 }

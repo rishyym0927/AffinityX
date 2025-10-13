@@ -6,11 +6,10 @@ import { RequestsList } from "@/components/requests/requests-list"
 import { RequestStats } from "@/components/requests/request-stats"
 import { RequestFilters } from "@/components/requests/request-filters"
 import { ProtectedRoute } from "@/components/auth/protected-route"
-import { PublicRoute } from "@/components/auth/public-route"
 
 export default function RequestsPage() {
   return (
-    <PublicRoute>
+    <ProtectedRoute>
       <div className="min-h-screen bg-black text-white">
         <DashboardNav />
 
@@ -46,6 +45,6 @@ export default function RequestsPage() {
         </div>
       </main>
     </div>
-    </PublicRoute>
+    </ProtectedRoute>
   )
 }

@@ -1,15 +1,16 @@
 package api
 
 import (
-	"net/http"
-	"strings"
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type ctxKey string
+
 const userIDKey ctxKey = "uid"
 
 func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
@@ -40,7 +41,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 				http.Error(w, "invalid claims", http.StatusUnauthorized)
 				return
 			}
-			ctx := context.WithValue(r.Context(), "user_id", int64(uidFloat))
+			ctx := context.WithValue(r.Context(), userIDKey, int64(uidFloat))
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			http.Error(w, "invalid token", http.StatusUnauthorized)
@@ -48,10 +49,11 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-
 func userIDFromCtx(r *http.Request) int64 {
 	if v := r.Context().Value(userIDKey); v != nil {
-		if id, ok := v.(int64); ok { return id }
+		if id, ok := v.(int64); ok {
+			return id
+		}
 	}
 	return 0
 }

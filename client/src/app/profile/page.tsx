@@ -9,13 +9,12 @@ import { ProfileInfo } from "@/components/profile/profile-info"
 import { ProfileSettings } from "@/components/profile/profile-settings"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useState } from "react"
-import { PublicRoute } from "@/components/auth/public-route"
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("overview")
 
   return (
-    <PublicRoute>
+    <ProtectedRoute>
       <div className="min-h-screen bg-black text-white">
         <DashboardNav />
 
@@ -79,6 +78,6 @@ export default function ProfilePage() {
         </div>
       </main>
     </div>
-    </PublicRoute>
+    </ProtectedRoute>
   )
 }

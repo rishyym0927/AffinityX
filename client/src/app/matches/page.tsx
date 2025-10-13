@@ -6,11 +6,10 @@ import { MatchesList } from "@/components/matches/matches-list"
 import { ActiveChats } from "@/components/matches/active-chats"
 import { MatchFilters } from "@/components/matches/match-filters"
 import { ProtectedRoute } from "@/components/auth/protected-route"
-import { PublicRoute } from "@/components/auth/public-route"
 
 export default function MatchesPage() {
   return (
-    <PublicRoute>
+    <ProtectedRoute>
       <div className="min-h-screen bg-black text-white">
         <DashboardNav />
 
@@ -46,6 +45,6 @@ export default function MatchesPage() {
         </div>
       </main>
     </div>
-    </PublicRoute>
+    </ProtectedRoute>
   )
 }

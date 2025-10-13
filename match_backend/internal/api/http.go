@@ -5,13 +5,14 @@ import (
 
 	"net/http"
 
-	"strconv"
 	"fmt"
+	"strconv"
 
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 
@@ -48,6 +49,18 @@ func (s *Server) Routes() http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	// CORS middleware
+	//complete basic cors setup to allow requests from any origin
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
 
 	// ---- Public routes ----
 	r.Get("/api/health", s.health)
@@ -135,18 +148,17 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createToken(uid int64) string {
-    claims := jwt.MapClaims{
-        "user_id": uid,
-        "exp":     time.Now().Add(72 * time.Hour).Unix(),
-    }
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    signed, err := token.SignedString(s.jwtSecret)
-    if err != nil {
-        fmt.Println("JWT sign error:", err)
-    }
-    return signed
+	claims := jwt.MapClaims{
+		"user_id": uid,
+		"exp":     time.Now().Add(72 * time.Hour).Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, err := token.SignedString(s.jwtSecret)
+	if err != nil {
+		fmt.Println("JWT sign error:", err)
+	}
+	return signed
 }
-
 
 // ==================== USER PROFILE ====================
 

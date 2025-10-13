@@ -10,7 +10,6 @@ import { useState } from "react"
 import { Heart, X, Zap, Sparkles, TrendingUp, Users, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
-import { PublicRoute } from "@/components/auth/public-route"
 import { femaleUsers as users } from "@/data/user"
 import { recentMatches  } from "@/data/user"
 
@@ -123,7 +122,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <PublicRoute>
+    <ProtectedRoute>
       <div className="min-h-screen bg-black text-white">
         <DashboardNav />
 
@@ -360,6 +359,6 @@ export default function DashboardPage() {
       </main>
    
     </div>
-    </PublicRoute>
+    </ProtectedRoute>
   )
 }

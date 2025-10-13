@@ -28,11 +28,21 @@ export default function LoginPage() {
     e.preventDefault()
     setError("")
     
-    // Login functionality disabled - implement your own
-    setError("Login functionality is currently disabled. Please implement your own authentication.")
+    // Validate form
+    if (!formData.email || !formData.password) {
+      setError("Please fill in all fields")
+      return
+    }
+
+    // Call login function
+    const result = await login(formData.email, formData.password)
     
-    // You can access the form data here for your own implementation:
-    console.log("Login form data:", formData)
+    if (result.success) {
+      // Redirect to matches page on success
+      router.push("/matches")
+    } else {
+      setError(result.error || "Login failed. Please try again.")
+    }
   }
 
   return (

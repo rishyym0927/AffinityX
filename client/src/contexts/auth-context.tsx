@@ -2,6 +2,9 @@
 
 import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 
+// API Base URL - update this to match your backend
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+
 // Types
 export interface User {
   id: string
@@ -24,8 +27,17 @@ export interface AuthState {
 export interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   logout: () => void
-  signup: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>
+  signup: (userData: SignupData) => Promise<{ success: boolean; error?: string }>
   updateUser: (userData: Partial<User>) => void
+}
+
+export interface SignupData {
+  name: string
+  email: string
+  password: string
+  gender: string
+  age: number
+  city: string
 }
 
 // Create context
@@ -47,39 +59,156 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(false) // Disabled auth loading
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Disabled authentication - always false
-  const isAuthenticated = false
+  // Check if user is authenticated
+  const isAuthenticated = !!user
 
-  // Disabled auth initialization
+  // Initialize auth from localStorage
   useEffect(() => {
-    // Authentication disabled - no initialization needed
-    setIsLoading(false)
+    const initAuth = async () => {
+      try {
+        const token = localStorage.getItem('auth_token')
+        const userId = localStorage.getItem('user_id')
+        const userEmail = localStorage.getItem('user_email')
+        const userName = localStorage.getItem('user_name')
+
+        if (token && userId && userEmail && userName) {
+          // Restore user from localStorage
+          setUser({
+            id: userId,
+            email: userEmail,
+            name: userName,
+          })
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    initAuth()
   }, [])
 
-  // Disabled login function
+  // Login function
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    // Authentication disabled
-    return { success: false, error: 'Authentication is currently disabled' }
+    setIsLoading(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      console.log(response, "response")
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        return { success: false, error: errorText || 'Invalid credentials' }
+      }
+      console.log("response ok")
+
+      const data = await response.json()
+      
+      // Store token and user info
+      localStorage.setItem('auth_token', data.token)
+      localStorage.setItem('user_id', data.user_id.toString())
+      localStorage.setItem('user_email', email)
+      localStorage.setItem('user_name', email.split('@')[0]) // Store temporary name
+      
+      // Set user state
+      setUser({
+        id: data.user_id.toString(),
+        email: email,
+        name: email.split('@')[0], // Temporary name until we fetch full profile
+      })
+
+      return { success: true }
+    } catch (error) {
+      console.error('Login error:', error)
+      return { success: false, error: 'Network error. Please check if the backend is running.' }
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  // Disabled signup function
-  const signup = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
-    // Signup disabled - you can implement your own authentication
-    return { success: false, error: 'Signup is currently disabled' }
+  // Signup function
+  const signup = async (userData: SignupData): Promise<{ success: boolean; error?: string }> => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: userData.name,
+          email: userData.email,
+          password: userData.password,
+          gender: userData.gender,
+          age: userData.age,
+          city: userData.city,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        return { success: false, error: errorText || 'Signup failed' }
+      }
+
+      const data = await response.json()
+      
+      // Store token and user info
+      localStorage.setItem('auth_token', data.token)
+      localStorage.setItem('user_id', data.user_id.toString())
+      localStorage.setItem('user_email', userData.email)
+      localStorage.setItem('user_name', userData.name)
+      
+      // Set user state
+      setUser({
+        id: data.user_id.toString(),
+        email: userData.email,
+        name: userData.name,
+      })
+
+      return { success: true }
+    } catch (error) {
+      console.error('Signup error:', error)
+      return { success: false, error: 'Network error. Please check if the backend is running.' }
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  // Disabled logout function
+  // Logout function
   const logout = () => {
-    // Authentication disabled - no logout needed
-    console.log('Logout disabled')
+    // Clear localStorage
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user_id')
+    localStorage.removeItem('user_email')
+    localStorage.removeItem('user_name')
+    
+    // Clear user state
+    setUser(null)
   }
 
-  // Disabled update user function
+  // Update user function
   const updateUser = (userData: Partial<User>) => {
-    // Authentication disabled - no user updates
-    console.log('User update disabled', userData)
+    if (user) {
+      const updatedUser = { ...user, ...userData }
+      setUser(updatedUser)
+      
+      // Update localStorage if needed
+      if (userData.name) {
+        localStorage.setItem('user_name', userData.name)
+      }
+      if (userData.email) {
+        localStorage.setItem('user_email', userData.email)
+      }
+    }
   }
 
   const value: AuthContextType = {

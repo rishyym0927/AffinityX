@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowRight, ArrowLeft, Eye, EyeOff, Upload, Check, X } from "lucide-react"
 import { useState, type KeyboardEvent } from "react"
 import Link from "next/link"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth, type SignupData } from "@/contexts/auth-context"
 import { PublicRoute } from "@/components/auth/public-route"
 import { useRouter } from "next/navigation"
 
@@ -30,6 +30,14 @@ interface FormData {
   socialHabits: string[]
   pastRelationships: string
   profilePicture: File | null
+}
+
+// Gender mapping for backend
+const genderMapping: { [key: string]: string } = {
+  'male': 'M',
+  'female': 'F',
+  'non-binary': 'O',
+  'prefer-not-to-say': 'O'
 }
 
 const steps = [
@@ -199,7 +207,7 @@ export default function SignupPage() {
     
     console.log("Form submission started", { currentStep, formData })
     
-    // Comprehensive validation (keeping for UI consistency)
+    // Comprehensive validation
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
       setError("Please fill in all required fields")
       return
@@ -210,26 +218,30 @@ export default function SignupPage() {
       return
     }
     
-    if (!formData.username) {
-      setError("Please choose a username")
-      return
-    }
-    
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters long")
       return
     }
     
-    if (!formData.openness || !formData.relationType || !formData.pastRelationships) {
-      setError("Please complete your personal details")
-      return
+    // Prepare signup data for backend
+    const signupData: SignupData = {
+      name: `${formData.firstName} ${formData.lastName}`,
+      email: formData.email,
+      password: formData.password,
+      gender: genderMapping[formData.gender] || 'O', // Map to M/F/O
+      age: parseInt(formData.age),
+      city: formData.location,
     }
     
-    // Signup functionality disabled - implement your own
-    setError("Signup functionality is currently disabled. Please implement your own authentication.")
+    // Call signup function
+    const result = await signup(signupData)
     
-    // You can access all the form data here for your own implementation:
-    console.log("Complete form data:", formData)
+    if (result.success) {
+      // Redirect to dashboard or profile completion page
+      router.push("/dashboard")
+    } else {
+      setError(result.error || "Signup failed. Please try again.")
+    }
   }
 
   const renderStep = () => {
