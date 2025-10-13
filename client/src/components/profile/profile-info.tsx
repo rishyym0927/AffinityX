@@ -9,8 +9,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Edit3, Save } from "lucide-react"
 import { useState } from "react"
 
+// User profile interface to match actual API response
+interface UserProfile {
+  ID: number
+  Name: string
+  Age: number
+  City: string
+  Gender: string
+  Lat: number
+  Lon: number
+  Communication: number
+  Confidence: number
+  Emotional: number
+  Personality: number
+  TotalScore: number
+}
+
 interface ProfileInfoProps {
   detailed?: boolean
+  userProfile?: UserProfile | null
 }
 
 const interests = [
@@ -36,7 +53,7 @@ const interests = [
 
 const socialHabits = ["Social drinker", "Non-smoker", "Gym enthusiast", "Early bird", "Night owl", "Foodie", "Traveler"]
 
-export function ProfileInfo({ detailed = false }: ProfileInfoProps) {
+export function ProfileInfo({ detailed = false, userProfile }: ProfileInfoProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [selectedInterests, setSelectedInterests] = useState(["React", "Python", "AI/ML", "Hiking", "Coffee"])
   const [selectedHabits, setSelectedHabits] = useState(["Social drinker", "Non-smoker", "Gym enthusiast"])
@@ -108,20 +125,31 @@ export function ProfileInfo({ detailed = false }: ProfileInfoProps) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="space-y-3">
-            <Label className="text-sm font-semibold text-white/80">First Name</Label>
+            <Label className="text-sm font-semibold text-white/80">Full Name</Label>
             {isEditing ? (
-              <Input defaultValue="Alex" className="bg-white/5 border-white/20 focus:border-[#FF0059] rounded-xl" />
+              <Input 
+                defaultValue={userProfile?.Name || ""} 
+                className="bg-white/5 border-white/20 focus:border-[#FF0059] rounded-xl" 
+              />
             ) : (
-              <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-white">Alex</div>
+              <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-white">
+                {userProfile?.Name || "Not specified"}
+              </div>
             )}
           </div>
 
           <div className="space-y-3">
-            <Label className="text-sm font-semibold text-white/80">Last Name</Label>
+            <Label className="text-sm font-semibold text-white/80">User ID</Label>
             {isEditing ? (
-              <Input defaultValue="Thompson" className="bg-white/5 border-white/20 focus:border-[#FF0059] rounded-xl" />
+              <Input 
+                defaultValue={userProfile?.ID?.toString() || ""} 
+                disabled
+                className="bg-white/5 border-white/20 focus:border-[#FF0059] rounded-xl opacity-60" 
+              />
             ) : (
-              <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-white">Thompson</div>
+              <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-white">
+                {userProfile?.ID || "Not specified"}
+              </div>
             )}
           </div>
 
@@ -130,29 +158,35 @@ export function ProfileInfo({ detailed = false }: ProfileInfoProps) {
             {isEditing ? (
               <Input
                 type="number"
-                defaultValue="30"
+                defaultValue={userProfile?.Age?.toString() || ""}
                 className="bg-white/5 border-white/20 focus:border-[#FF0059] rounded-xl"
               />
             ) : (
-              <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-white">30</div>
+              <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-white">
+                {userProfile?.Age || "Not specified"}
+              </div>
             )}
           </div>
 
           <div className="space-y-3">
             <Label className="text-sm font-semibold text-white/80">Gender</Label>
             {isEditing ? (
-              <Select defaultValue="male">
+              <Select defaultValue={userProfile?.Gender?.toLowerCase() || ""}>
                 <SelectTrigger className="bg-white/5 border-white/20 focus:border-[#FF0059] rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-black/90 border-white/20">
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                  <SelectItem value="non-binary">Non-binary</SelectItem>
+                  <SelectItem value="m">Male</SelectItem>
+                  <SelectItem value="f">Female</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
             ) : (
-              <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-white">Male</div>
+              <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-white">
+                {userProfile?.Gender === 'M' ? 'Male' : 
+                 userProfile?.Gender === 'F' ? 'Female' : 
+                 userProfile?.Gender || 'Not specified'}
+              </div>
             )}
           </div>
 
@@ -160,11 +194,18 @@ export function ProfileInfo({ detailed = false }: ProfileInfoProps) {
             <Label className="text-sm font-semibold text-white/80">Location</Label>
             {isEditing ? (
               <Input
-                defaultValue="San Francisco, CA"
+                defaultValue={userProfile?.City || ""}
                 className="bg-white/5 border-white/20 focus:border-[#FF0059] rounded-xl"
               />
             ) : (
-              <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-white">San Francisco, CA</div>
+              <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-white">
+                {userProfile?.City || "Location not specified"}
+                {userProfile?.Lat !== 0 && userProfile?.Lon !== 0 && userProfile && (
+                  <span className="text-white/60 text-sm ml-2">
+                    (Lat: {userProfile.Lat.toFixed(4)}, Lon: {userProfile.Lon.toFixed(4)})
+                  </span>
+                )}
+              </div>
             )}
           </div>
 
@@ -199,11 +240,47 @@ export function ProfileInfo({ detailed = false }: ProfileInfoProps) {
         </div>
       </motion.div>
 
+      {/* Personality Scores */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: detailed ? 0.3 : 0.15 }}
+        className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6"
+      >
+        <h3 className="text-lg font-semibold text-white mb-6">Personality Assessment</h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
+            <span className="text-white/80">Communication</span>
+            <span className="text-[#FF0059] font-semibold">{userProfile?.Communication || 0}/10</span>
+          </div>
+          <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
+            <span className="text-white/80">Confidence</span>
+            <span className="text-[#FF0059] font-semibold">{userProfile?.Confidence || 0}/10</span>
+          </div>
+          <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
+            <span className="text-white/80">Emotional Intelligence</span>
+            <span className="text-[#FF0059] font-semibold">{userProfile?.Emotional || 0}/10</span>
+          </div>
+          <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
+            <span className="text-white/80">Personality</span>
+            <span className="text-[#FF0059] font-semibold">{userProfile?.Personality || 0}/10</span>
+          </div>
+        </div>
+        
+        <div className="mt-4 p-4 bg-gradient-to-r from-[#FF0059]/10 to-[#FF0059]/5 border border-[#FF0059]/20 rounded-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-white font-semibold">Total Score</span>
+            <span className="text-[#FF0059] text-xl font-bold">{userProfile?.TotalScore || 0}/40</span>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Interests */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: detailed ? 0.4 : 0.2 }}
+        transition={{ duration: 0.6, delay: detailed ? 0.5 : 0.25 }}
         className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6"
       >
         <h3 className="text-lg font-semibold text-white mb-6">Interests & Hobbies</h3>
@@ -230,7 +307,7 @@ export function ProfileInfo({ detailed = false }: ProfileInfoProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: detailed ? 0.6 : 0.4 }}
+        transition={{ duration: 0.6, delay: detailed ? 0.7 : 0.35 }}
         className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6"
       >
         <h3 className="text-lg font-semibold text-white mb-6">Social Habits</h3>
@@ -258,7 +335,7 @@ export function ProfileInfo({ detailed = false }: ProfileInfoProps) {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
+          transition={{ duration: 0.6, delay: 0.9 }}
           className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6"
         >
           <h3 className="text-lg font-semibold text-white mb-6">Dating Preferences</h3>

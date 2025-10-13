@@ -6,7 +6,27 @@ import { Camera, Edit3, Share, MapPin, Briefcase, Calendar, Verified } from "luc
 import { useState } from "react"
 import Image from "next/image"
 
-export function ProfileHeader() {
+// User profile interface to match actual API response
+interface UserProfile {
+  ID: number
+  Name: string
+  Age: number
+  City: string
+  Gender: string
+  Lat: number
+  Lon: number
+  Communication: number
+  Confidence: number
+  Emotional: number
+  Personality: number
+  TotalScore: number
+}
+
+interface ProfileHeaderProps {
+  userProfile: UserProfile | null
+}
+
+export function ProfileHeader({ userProfile }: ProfileHeaderProps) {
   const [isEditing, setIsEditing] = useState(false)
 
   return (
@@ -36,7 +56,9 @@ export function ProfileHeader() {
           <div className="flex-1 text-center sm:text-left">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
               <div className="flex items-center justify-center sm:justify-start gap-2">
-                <h1 className="text-3xl sm:text-4xl font-bold text-white">Alex Thompson</h1>
+                <h1 className="text-3xl sm:text-4xl font-bold text-white">
+                  {userProfile?.Name || "Loading..."}
+                </h1>
                 <Verified className="h-6 w-6 text-blue-400" />
               </div>
               <div className="flex items-center justify-center sm:justify-start gap-2">
@@ -64,23 +86,28 @@ export function ProfileHeader() {
             <div className="space-y-2 text-white/80">
               <div className="flex items-center justify-center sm:justify-start gap-2">
                 <MapPin className="h-4 w-4 text-[#FF0059] flex-shrink-0" />
-                <span className="text-sm">San Francisco, CA</span>
+                <span className="text-sm">
+                  {userProfile?.City || "Location not specified"}, Age: {userProfile?.Age || "N/A"}
+                </span>
               </div>
               <div className="flex items-center justify-center sm:justify-start gap-2">
                 <Briefcase className="h-4 w-4 text-[#FF0059] flex-shrink-0" />
-                <span className="text-sm">Senior Software Engineer at Stripe</span>
+                <span className="text-sm">Software Engineer at Tech Company</span>
               </div>
               <div className="flex items-center justify-center sm:justify-start gap-2">
                 <Calendar className="h-4 w-4 text-[#FF0059] flex-shrink-0" />
-                <span className="text-sm">Joined March 2024</span>
+                <span className="text-sm">
+                  Member since 2024
+                </span>
               </div>
             </div>
 
             {/* Bio */}
             <p className="text-white/70 text-sm sm:text-base leading-relaxed mt-4 max-w-2xl">
-              Passionate full-stack developer with 8+ years of experience building scalable web applications. Love
-              exploring new technologies, contributing to open source, and mentoring junior developers. When I'm not
-              coding, you'll find me hiking trails or trying new coffee shops around the city.
+              Gender: {userProfile?.Gender === 'M' ? 'Male' : userProfile?.Gender === 'F' ? 'Female' : 'Not specified'} | 
+              Total Score: {userProfile?.TotalScore || 0} | 
+              Passionate about connecting with like-minded individuals and building meaningful relationships. 
+              When I'm not working, you'll find me exploring new places and trying new experiences around the city.
             </p>
           </div>
         </div>

@@ -1,16 +1,29 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { TrendingUp, Heart, Users, MessageCircle, Eye, Star, Zap, Calendar } from "lucide-react"
+import { TrendingUp, Heart, Users, MessageCircle, Eye, Star, Zap, Calendar, Brain, Sparkles } from "lucide-react"
 
-const stats = [
-  { label: "Total Likes", value: 847, icon: Heart, color: "text-[#FF0059]", bg: "bg-[#FF0059]/20", change: "+12%" },
-  { label: "Matches", value: 156, icon: Users, color: "text-green-400", bg: "bg-green-400/20", change: "+8%" },
-  { label: "Messages", value: 423, icon: MessageCircle, color: "text-blue-400", bg: "bg-blue-400/20", change: "+15%" },
-  { label: "Profile Views", value: 2847, icon: Eye, color: "text-purple-400", bg: "bg-purple-400/20", change: "+23%" },
-  { label: "Super Likes", value: 34, icon: Zap, color: "text-yellow-400", bg: "bg-yellow-400/20", change: "+5%" },
-  { label: "Rating", value: 4.8, icon: Star, color: "text-orange-400", bg: "bg-orange-400/20", change: "+0.2" },
-]
+// User profile interface to match actual API response
+interface UserProfile {
+  ID: number
+  Name: string
+  Age: number
+  City: string
+  Gender: string
+  Lat: number
+  Lon: number
+  Communication: number
+  Confidence: number
+  Emotional: number
+  Personality: number
+  TotalScore: number
+}
+
+interface ProfileStatsProps {
+  userProfile?: UserProfile | null
+}
+
+
 
 const weeklyActivity = [
   { day: "Mon", likes: 12, matches: 3 },
@@ -22,7 +35,16 @@ const weeklyActivity = [
   { day: "Sun", likes: 20, matches: 6 },
 ]
 
-export function ProfileStats() {
+export function ProfileStats({ userProfile }: ProfileStatsProps) {
+  // Create stats array with mix of real data and mock data
+  const stats = [
+    { label: "Communication", value: userProfile?.Communication || 0, icon: MessageCircle, color: "text-[#FF0059]", bg: "bg-[#FF0059]/20", change: "+12%", max: 10 },
+    { label: "Confidence", value: userProfile?.Confidence || 0, icon: Zap, color: "text-green-400", bg: "bg-green-400/20", change: "+8%", max: 10 },
+    { label: "Emotional IQ", value: userProfile?.Emotional || 0, icon: Heart, color: "text-blue-400", bg: "bg-blue-400/20", change: "+15%", max: 10 },
+    { label: "Personality", value: userProfile?.Personality || 0, icon: Sparkles, color: "text-purple-400", bg: "bg-purple-400/20", change: "+23%", max: 10 },
+    { label: "Total Score", value: userProfile?.TotalScore || 0, icon: Brain, color: "text-yellow-400", bg: "bg-yellow-400/20", change: "+5%", max: 40 },
+    { label: "Profile Rating", value: 4.8, icon: Star, color: "text-orange-400", bg: "bg-orange-400/20", change: "+0.2", max: 5 },
+  ]
   return (
     <div className="space-y-6">
       {/* Main Stats */}
@@ -56,7 +78,9 @@ export function ProfileStats() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-bold text-white text-lg">{stat.value}</div>
+                <div className="font-bold text-white text-lg">
+                  {stat.value}/{stat.max}
+                </div>
                 <div
                   className={`text-xs font-medium ${stat.change.startsWith("+") ? "text-green-400" : "text-red-400"}`}
                 >

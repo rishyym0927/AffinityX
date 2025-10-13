@@ -5,17 +5,43 @@ import React, { createContext, useContext, useEffect, useState, type ReactNode }
 // API Base URL - update this to match your backend
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
-// Types
+// Types - Updated to match backend response
 export interface User {
   id: string
   email: string
   name: string
+  age?: number
+  city?: string
+  gender?: string
+  lat?: number
+  lon?: number
+  communication?: number
+  confidence?: number
+  emotional?: number
+  personality?: number
+  totalScore?: number
   avatar?: string
   preferences?: {
     ageRange: [number, number]
     interests: string[]
     location: string
   }
+}
+
+// Backend user profile interface
+interface BackendUserProfile {
+  ID: number
+  Name: string
+  Age: number
+  City: string
+  Gender: string
+  Lat: number
+  Lon: number
+  Communication: number
+  Confidence: number
+  Emotional: number
+  Personality: number
+  TotalScore: number
 }
 
 export interface AuthState {
@@ -29,6 +55,7 @@ export interface AuthContextType extends AuthState {
   logout: () => void
   signup: (userData: SignupData) => Promise<{ success: boolean; error?: string }>
   updateUser: (userData: Partial<User>) => void
+  refreshUserData: () => Promise<void>
 }
 
 export interface SignupData {
@@ -64,6 +91,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Check if user is authenticated
   const isAuthenticated = !!user
 
+  // Function to fetch user profile data from backend
+  const fetchUserProfile = async (userId: string, token: string): Promise<User | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/user/profile/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        console.error('Failed to fetch user profile:', response.statusText)
+        return null
+      }
+
+      const profileData: BackendUserProfile = await response.json()
+      
+      // Convert backend response to User interface
+      const user: User = {
+        id: userId,
+        email: localStorage.getItem('user_email') || '',
+        name: profileData.Name,
+        age: profileData.Age,
+        city: profileData.City,
+        gender: profileData.Gender,
+        lat: profileData.Lat,
+        lon: profileData.Lon,
+        communication: profileData.Communication,
+        confidence: profileData.Confidence,
+        emotional: profileData.Emotional,
+        personality: profileData.Personality,
+        totalScore: profileData.TotalScore,
+      }
+
+      return user
+    } catch (error) {
+      console.error('Error fetching user profile:', error)
+      return null
+    }
+  }
+
   // Initialize auth from localStorage
   useEffect(() => {
     const initAuth = async () => {
@@ -71,15 +140,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const token = localStorage.getItem('auth_token')
         const userId = localStorage.getItem('user_id')
         const userEmail = localStorage.getItem('user_email')
-        const userName = localStorage.getItem('user_name')
 
-        if (token && userId && userEmail && userName) {
-          // Restore user from localStorage
-          setUser({
-            id: userId,
-            email: userEmail,
-            name: userName,
-          })
+        if (token && userId && userEmail) {
+          // Try to fetch complete user profile from backend
+          const fullUserProfile = await fetchUserProfile(userId, token)
+          
+          if (fullUserProfile) {
+            setUser(fullUserProfile)
+          } else {
+            // Fallback to basic user info if profile fetch fails
+            const userName = localStorage.getItem('user_name')
+            setUser({
+              id: userId,
+              email: userEmail,
+              name: userName || userEmail.split('@')[0],
+            })
+          }
         }
       } catch (error) {
         console.error('Auth initialization error:', error)
@@ -113,18 +189,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const data = await response.json()
       
-      // Store token and user info
+      // Store token and basic user info
       localStorage.setItem('auth_token', data.token)
       localStorage.setItem('user_id', data.user_id.toString())
       localStorage.setItem('user_email', email)
-      localStorage.setItem('user_name', email.split('@')[0]) // Store temporary name
       
-      // Set user state
-      setUser({
-        id: data.user_id.toString(),
-        email: email,
-        name: email.split('@')[0], // Temporary name until we fetch full profile
-      })
+      // Fetch complete user profile from backend
+      const fullUserProfile = await fetchUserProfile(data.user_id.toString(), data.token)
+      
+      if (fullUserProfile) {
+        // Store complete user data
+        localStorage.setItem('user_name', fullUserProfile.name)
+        setUser(fullUserProfile)
+      } else {
+        // Fallback to basic user info if profile fetch fails
+        const fallbackName = email.split('@')[0]
+        localStorage.setItem('user_name', fallbackName)
+        setUser({
+          id: data.user_id.toString(),
+          email: email,
+          name: fallbackName,
+        })
+      }
 
       return { success: true }
     } catch (error) {
@@ -161,18 +247,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const data = await response.json()
       
-      // Store token and user info
+      // Store token and basic user info
       localStorage.setItem('auth_token', data.token)
       localStorage.setItem('user_id', data.user_id.toString())
       localStorage.setItem('user_email', userData.email)
       localStorage.setItem('user_name', userData.name)
       
-      // Set user state
-      setUser({
-        id: data.user_id.toString(),
-        email: userData.email,
-        name: userData.name,
-      })
+      // Fetch complete user profile from backend
+      const fullUserProfile = await fetchUserProfile(data.user_id.toString(), data.token)
+      
+      if (fullUserProfile) {
+        setUser(fullUserProfile)
+      } else {
+        // Fallback to basic user info if profile fetch fails
+        setUser({
+          id: data.user_id.toString(),
+          email: userData.email,
+          name: userData.name,
+        })
+      }
 
       return { success: true }
     } catch (error) {
@@ -185,7 +278,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Logout function
   const logout = () => {
-    // Clear localStorage
+    // Clear all localStorage items related to auth
     localStorage.removeItem('auth_token')
     localStorage.removeItem('user_id')
     localStorage.removeItem('user_email')
@@ -211,6 +304,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  // Refresh user data from backend
+  const refreshUserData = async (): Promise<void> => {
+    const token = localStorage.getItem('auth_token')
+    const userId = localStorage.getItem('user_id')
+    
+    if (token && userId) {
+      try {
+        const fullUserProfile = await fetchUserProfile(userId, token)
+        if (fullUserProfile) {
+          setUser(fullUserProfile)
+          localStorage.setItem('user_name', fullUserProfile.name)
+        }
+      } catch (error) {
+        console.error('Error refreshing user data:', error)
+      }
+    }
+  }
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -218,7 +329,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     signup,
-    updateUser
+    updateUser,
+    refreshUserData
   }
 
   return (

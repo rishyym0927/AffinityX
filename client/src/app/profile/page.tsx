@@ -8,10 +8,117 @@ import { ProfileGallery } from "@/components/profile/profile-gallery"
 import { ProfileInfo } from "@/components/profile/profile-info"
 import { ProfileSettings } from "@/components/profile/profile-settings"
 import { ProtectedRoute } from "@/components/auth/protected-route"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useAuth } from "@/contexts/auth-context"
+import { api, getUserId } from "@/lib/api"
+
+// User profile interface to match actual API response
+interface UserProfile {
+  ID: number
+  Name: string
+  Age: number
+  City: string
+  Gender: string
+  Lat: number
+  Lon: number
+  Communication: number
+  Confidence: number
+  Emotional: number
+  Personality: number
+  TotalScore: number
+}
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("overview")
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
+
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        const userId = getUserId()
+        if (!userId) {
+          setError("User ID not found")
+          return
+        }
+
+        const response = await api.getProfile(parseInt(userId))
+        console.log("Profile fetch response:", response)
+        
+        if (response.error) {
+          setError(response.error)
+        } else if (response.data) {
+          setUserProfile(response.data)
+        }
+      } catch (err) {
+        setError("Failed to fetch profile data")
+        console.error("Profile fetch error:", err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (user) {
+      fetchUserProfile()
+    }
+  }, [user])
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-black text-white">
+          <DashboardNav />
+          <main className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-6xl mx-auto">
+              <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF0059] mx-auto mb-4"></div>
+                  <p className="text-white/70">Loading profile...</p>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </ProtectedRoute>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-black text-white">
+          <DashboardNav />
+          <main className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-6xl mx-auto">
+              <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-red-400 text-2xl">⚠</span>
+                  </div>
+                  <p className="text-red-400 mb-4">Failed to load profile</p>
+                  <p className="text-white/70 text-sm">{error}</p>
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className="mt-4 px-4 py-2 bg-[#FF0059] hover:bg-[#FF0059]/90 rounded-lg text-white transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </ProtectedRoute>
+    )
+  }
 
   return (
     <ProtectedRoute>
@@ -22,7 +129,7 @@ export default function ProfilePage() {
         <main className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           {/* Profile Header */}
-          <ProfileHeader />
+          <ProfileHeader userProfile={userProfile} />
 
           {/* Tab Navigation */}
           <motion.div
@@ -61,17 +168,17 @@ export default function ProfilePage() {
             {activeTab === "overview" && (
               <div className="flex flex-wrap gap-6 lg:gap-8">
                 <div className="w-full lg:w-80 xl:w-96 flex-shrink-0">
-                  <ProfileStats />
+                  <ProfileStats userProfile={userProfile} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <ProfileInfo />
+                  <ProfileInfo userProfile={userProfile} />
                 </div>
               </div>
             )}
 
             {activeTab === "gallery" && <ProfileGallery />}
 
-            {activeTab === "info" && <ProfileInfo detailed />}
+            {activeTab === "info" && <ProfileInfo detailed userProfile={userProfile} />}
 
             {activeTab === "settings" && <ProfileSettings />}
           </motion.div>

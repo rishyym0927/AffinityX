@@ -7,11 +7,13 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed"
 import { QuickStats } from "@/components/dashboard/quick-stats"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useState } from "react"
-import { Heart, X, Zap, Sparkles, TrendingUp, Users, MessageCircle } from "lucide-react"
+import { Heart, X, Zap, Sparkles, TrendingUp, Users, MessageCircle, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
-import { femaleUsers as users } from "@/data/user"
-import { recentMatches  } from "@/data/user"
+import { recentMatches } from "@/data/user"
+import { useRecommendations, type RecommendedUser } from "@/hooks/use-recommendations"
+import { RecommendationFiltersComponent } from "@/components/dashboard/recommendation-filters"
+import { useEffect } from "react"
 
 
 
@@ -81,27 +83,70 @@ export default function DashboardPage() {
   const [likedUsers, setLikedUsers] = useState<number[]>([])
   const [rejectedUsers, setRejectedUsers] = useState<number[]>([])
   const [isAnimating, setIsAnimating] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
 
-  const currentUser = users[currentUserIndex]
-  const remainingUsers = users.length - currentUserIndex
+  // Use recommendations context
+  const {
+    recommendations,
+    isLoading,
+    error,
+    fetchRecommendations,
+    removeRecommendation,
+    refreshRecommendations
+  } = useRecommendations()
 
-  const handleLike = () => {
+  const currentUser = recommendations[currentUserIndex]
+  const remainingUsers = recommendations.length - currentUserIndex
+
+  // Auto-refresh recommendations when they run low
+  useEffect(() => {
+    if (recommendations.length - currentUserIndex <= 2 && remainingUsers > 0) {
+      fetchRecommendations(undefined, true) // Append more recommendations
+    }
+  }, [currentUserIndex, recommendations.length, remainingUsers, fetchRecommendations])
+
+  // Convert RecommendedUser to the format expected by UserCard
+  const convertToUserCardFormat = (user: RecommendedUser) => ({
+    id: user.ID,
+    name: user.Name,
+    age: user.Age,
+    location: user.City,
+    bio: `Lives in ${user.City}. Looking for meaningful connections and great conversations.`,
+    interests: ["Travel", "Music", "Coffee", "Movies", "Reading"], // Default interests
+    profileImage: "/default.jpg",
+    images: ["/default.jpg"], // Default image since not provided by API
+    compatibility: user.TotalScore,
+    isOnline: Math.random() > 0.5, // Random online status
+    lastSeen: "2 hours ago", // Default last seen
+    occupation: "Professional", // Default occupation
+  })
+
+  const handleLike = async () => {
     if (isAnimating || !currentUser) return
 
     setIsAnimating(true)
-    setLikedUsers((prev) => [...prev, currentUser.id])
+    setLikedUsers((prev) => [...prev, currentUser.ID])
+
+    // Remove from recommendations
+    removeRecommendation(currentUser.ID)
 
     setTimeout(() => {
       setCurrentUserIndex((prev) => prev + 1)
       setIsAnimating(false)
     }, 300)
+
+    // TODO: Send like to backend API
+    // await api.sendMatchRequest(currentUser.ID)
   }
 
   const handleReject = () => {
     if (isAnimating || !currentUser) return
 
     setIsAnimating(true)
-    setRejectedUsers((prev) => [...prev, currentUser.id])
+    setRejectedUsers((prev) => [...prev, currentUser.ID])
+
+    // Remove from recommendations
+    removeRecommendation(currentUser.ID)
 
     setTimeout(() => {
       setCurrentUserIndex((prev) => prev + 1)
@@ -109,16 +154,22 @@ export default function DashboardPage() {
     }, 300)
   }
 
-  const handleSuperLike = () => {
+  const handleSuperLike = async () => {
     if (isAnimating || !currentUser) return
 
     setIsAnimating(true)
-    setLikedUsers((prev) => [...prev, currentUser.id])
+    setLikedUsers((prev) => [...prev, currentUser.ID])
+
+    // Remove from recommendations
+    removeRecommendation(currentUser.ID)
 
     setTimeout(() => {
       setCurrentUserIndex((prev) => prev + 1)
       setIsAnimating(false)
     }, 300)
+
+    // TODO: Send super like to backend API
+    // await api.sendMatchRequest(currentUser.ID)
   }
 
   return (
@@ -145,12 +196,41 @@ export default function DashboardPage() {
             {/* Center - Main Card Area */}
             <div className="flex-1 min-w-0 flex flex-col items-center justify-start order-1 lg:order-2">
               <div className="w-full max-w-md mx-auto">
-                {currentUserIndex < users.length ? (
+                {/* Loading State */}
+                {isLoading && recommendations.length === 0 ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center py-20"
+                  >
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF0059] mx-auto mb-4"></div>
+                    <p className="text-white/70">Finding perfect matches for you...</p>
+                  </motion.div>
+                ) : error ? (
+                  /* Error State */
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center py-20"
+                  >
+                    <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-red-400 text-2xl">⚠</span>
+                    </div>
+                    <p className="text-red-400 mb-4">Failed to load recommendations</p>
+                    <p className="text-white/70 text-sm mb-6">{error}</p>
+                    <Button
+                      onClick={refreshRecommendations}
+                      className="bg-[#FF0059] hover:bg-[#FF0059]/90 px-6 py-3 rounded-xl"
+                    >
+                      Try Again
+                    </Button>
+                  </motion.div>
+                ) : currentUser ? (
                   <div className="relative">
                     {/* Background cards for depth */}
-                    {users.slice(currentUserIndex + 1, currentUserIndex + 3).map((user, index) => (
+                    {recommendations.slice(currentUserIndex + 1, currentUserIndex + 3).map((user: RecommendedUser, index: number) => (
                       <div
-                        key={user.id}
+                        key={user.ID}
                         className="absolute inset-0 bg-white/5 rounded-3xl border border-white/10"
                         style={{
                           transform: `scale(${0.95 - index * 0.05}) translateY(${(index + 1) * 8}px)`,
@@ -163,20 +243,20 @@ export default function DashboardPage() {
                     {/* Current user card */}
                     <AnimatePresence mode="wait">
                       <motion.div
-                        key={currentUser.id}
+                        key={currentUser.ID}
                         initial={{ opacity: 0, scale: 0.8, rotateY: -90 }}
                         animate={{ opacity: 1, scale: 1, rotateY: 0 }}
                         exit={{
                           opacity: 0,
                           scale: 0.8,
-                          x: isAnimating ? (likedUsers.includes(currentUser.id) ? 300 : -300) : 0,
-                          rotateZ: isAnimating ? (likedUsers.includes(currentUser.id) ? 15 : -15) : 0,
+                          x: isAnimating ? (likedUsers.includes(currentUser.ID) ? 300 : -300) : 0,
+                          rotateZ: isAnimating ? (likedUsers.includes(currentUser.ID) ? 15 : -15) : 0,
                         }}
                         transition={{ duration: 0.3, ease: "easeOut" }}
                         className="relative z-10"
                       >
                         <UserCard
-                          user={currentUser}
+                          user={convertToUserCardFormat(currentUser)}
                           onLike={handleLike}
                           onReject={handleReject}
                           onSuperLike={handleSuperLike}
@@ -244,16 +324,18 @@ export default function DashboardPage() {
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
                       <Button
-                        onClick={() => {
+                        onClick={async () => {
                           setCurrentUserIndex(0)
                           setLikedUsers([])
                           setRejectedUsers([])
+                          await refreshRecommendations()
                         }}
                         className="bg-[#FF0059] hover:bg-[#FF0059]/90 px-6 sm:px-8 py-3 rounded-xl font-semibold"
                       >
                         {NO_USERS_MESSAGE.primaryButton}
                       </Button>
                       <Button
+                        onClick={() => setShowFilters(true)}
                         variant="outline"
                         className="border-white/20 hover:border-[#FF0059]/50 bg-white/5 hover:bg-white/10 px-6 sm:px-8 py-3 rounded-xl"
                       >
@@ -350,6 +432,16 @@ export default function DashboardPage() {
                       <span className="truncate">{action.label}</span>
                     </Button>
                   ))}
+                  
+                  {/* Filter Button */}
+                  <Button
+                    onClick={() => setShowFilters(true)}
+                    variant="outline"
+                    className="w-full justify-start border-white/20 hover:border-[#FF0059]/50 bg-white/5 hover:bg-white/10 text-sm"
+                  >
+                    <Settings className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <span className="truncate">Filter Preferences</span>
+                  </Button>
                 </div>
               </motion.div>
             </div>
@@ -358,6 +450,11 @@ export default function DashboardPage() {
         </div>
       </main>
    
+      {/* Recommendation Filters Modal */}
+      <RecommendationFiltersComponent 
+        isOpen={showFilters} 
+        onClose={() => setShowFilters(false)} 
+      />
     </div>
     </ProtectedRoute>
   )
