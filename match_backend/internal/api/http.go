@@ -341,6 +341,7 @@ func (s *Server) listUserImages(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "db error", 500)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{"images": imgs})
 }
 

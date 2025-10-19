@@ -69,6 +69,19 @@ export default function ProfilePage() {
     }
   }, [user])
 
+  // Listen for gallery tab open event
+  useEffect(() => {
+    const handleOpenGallery = () => {
+      setActiveTab("gallery")
+    }
+    
+    window.addEventListener('openGalleryTab', handleOpenGallery)
+    
+    return () => {
+      window.removeEventListener('openGalleryTab', handleOpenGallery)
+    }
+  }, [])
+
   // Loading state
   if (isLoading) {
     return (

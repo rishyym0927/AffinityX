@@ -2,37 +2,51 @@ package repo
 
 import (
 	"context"
+	"time"
 )
-
 
 // ---------------------------
 // User Images
-// ---------------------------		
+// ---------------------------
 
+type UserImage struct {
+	ID         int64     `json:"id"`
+	UserID     int64     `json:"user_id"`
+	ImageURL   string    `json:"image_url"`
+	IsPrimary  bool      `json:"is_primary"`
+	UploadedAt time.Time `json:"uploaded_at"`
+}
 
 func (p *Postgres) AddUserImage(ctx context.Context, userID int64, url string) error {
+	// Extract filename from URL for object_name
+	objectName := url
 	_, err := p.Pool.Exec(ctx,
-		`INSERT INTO user_images (user_id, image_url) VALUES ($1, $2);`,
-		userID, url)
+		`INSERT INTO user_images (user_id, object_name, public_url) VALUES ($1, $2, $3);`,
+		userID, objectName, url)
 	return err
 }
 
-func (p *Postgres) GetUserImages(ctx context.Context, userID int64) ([]string, error) {
-	rows, err := p.Pool.Query(ctx, `SELECT image_url FROM user_images WHERE user_id=$1 ORDER BY uploaded_at DESC;`, userID)
+func (p *Postgres) GetUserImages(ctx context.Context, userID int64) ([]UserImage, error) {
+	rows, err := p.Pool.Query(ctx,
+		`SELECT id, user_id, COALESCE(public_url, ''), is_primary, uploaded_at 
+		 FROM user_images 
+		 WHERE user_id=$1 
+		 ORDER BY is_primary DESC, uploaded_at DESC;`,
+		userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var urls []string
+	var images []UserImage
 	for rows.Next() {
-		var u string
-		if err := rows.Scan(&u); err != nil {
+		var img UserImage
+		if err := rows.Scan(&img.ID, &img.UserID, &img.ImageURL, &img.IsPrimary, &img.UploadedAt); err != nil {
 			return nil, err
 		}
-		urls = append(urls, u)
+		images = append(images, img)
 	}
-	return urls, rows.Err()
+	return images, rows.Err()
 }
 
 func (p *Postgres) DeleteUserImage(ctx context.Context, imageID, userID int64) error {

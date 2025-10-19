@@ -3,8 +3,9 @@
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Camera, Edit3, Share, MapPin, Briefcase, Calendar, Verified } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
+import { api } from "@/lib/api"
 
 // User profile interface to match actual API response
 interface UserProfile {
@@ -22,12 +23,44 @@ interface UserProfile {
   TotalScore: number
 }
 
+interface UserImage {
+  id: number
+  user_id: number
+  image_url: string
+  is_primary: boolean
+  uploaded_at: string
+}
+
 interface ProfileHeaderProps {
   userProfile: UserProfile | null
 }
 
 export function ProfileHeader({ userProfile }: ProfileHeaderProps) {
   const [isEditing, setIsEditing] = useState(false)
+  const [primaryImage, setPrimaryImage] = useState<string>("/default.jpg")
+
+  // Fetch user images and find primary
+  useEffect(() => {
+    const fetchPrimaryImage = async () => {
+      try {
+        const response = await api.listUserImages()
+        if (response.data?.images && Array.isArray(response.data.images)) {
+          const images: UserImage[] = response.data.images
+          const primary = images.find(img => img.is_primary)
+          if (primary?.image_url) {
+            setPrimaryImage(primary.image_url)
+          } else if (images.length > 0 && images[0].image_url) {
+            // Use first image if no primary is set
+            setPrimaryImage(images[0].image_url)
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch primary image:", err)
+      }
+    }
+
+    fetchPrimaryImage()
+  }, [])
 
   return (
     <motion.div
@@ -45,9 +78,24 @@ export function ProfileHeader({ userProfile }: ProfileHeaderProps) {
           {/* Profile Image */}
           <div className="relative group">
             <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-br from-[#FF0059]/20 to-[#FF0059]/10 border-4 border-[#FF0059]/30 overflow-hidden">
-              <Image width={160} height={160} src="/default.jpg" alt="Profile" className="w-full h-full object-cover" />
+              <Image 
+                width={160} 
+                height={160} 
+                src={primaryImage} 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+                onError={() => setPrimaryImage("/default.jpg")}
+              />
             </div>
-            <button className="absolute bottom-2 right-2 w-10 h-10 bg-[#FF0059] hover:bg-[#FF0059]/90 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg shadow-[#FF0059]/25">
+            <button 
+              className="absolute bottom-2 right-2 w-10 h-10 bg-[#FF0059] hover:bg-[#FF0059]/90 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg shadow-[#FF0059]/25"
+              title="Upload profile photo"
+              onClick={() => {
+                // Navigate to gallery tab or trigger file upload
+                const event = new CustomEvent('openGalleryTab');
+                window.dispatchEvent(event);
+              }}
+            >
               <Camera className="h-5 w-5 text-white" />
             </button>
           </div>
