@@ -2,43 +2,67 @@
 
 import { motion } from "framer-motion"
 import { Heart, Users, TrendingUp, Clock } from "lucide-react"
-
-const stats = [
-  {
-    label: "Total Requests",
-    value: 47,
-    icon: Heart,
-    color: "text-[#FF0059]",
-    bg: "bg-[#FF0059]/20",
-    change: "+12 this week",
-  },
-  {
-    label: "Accepted",
-    value: 23,
-    icon: Users,
-    color: "text-green-400",
-    bg: "bg-green-400/20",
-    change: "49% acceptance rate",
-  },
-  {
-    label: "Pending",
-    value: 8,
-    icon: Clock,
-    color: "text-yellow-400",
-    bg: "bg-yellow-400/20",
-    change: "Awaiting response",
-  },
-  {
-    label: "This Week",
-    value: 12,
-    icon: TrendingUp,
-    color: "text-blue-400",
-    bg: "bg-blue-400/20",
-    change: "+3 from last week",
-  },
-]
+import { useRequestStats } from "@/hooks/use-stats"
 
 export function RequestStats() {
+  // Fetch real request statistics
+  const { requestStats, isLoading } = useRequestStats()
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6"
+      >
+        <h3 className="text-lg font-semibold text-white mb-6">Request Statistics</h3>
+        <div className="animate-pulse space-y-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-20 bg-white/5 rounded-xl"></div>
+          ))}
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Create stats array with real data
+  const stats = [
+    {
+      label: "Total Requests",
+      value: requestStats?.total_requests || 0,
+      icon: Heart,
+      color: "text-[#FF0059]",
+      bg: "bg-[#FF0059]/20",
+      change: `+${requestStats?.this_week || 0} this week`,
+    },
+    {
+      label: "Accepted",
+      value: requestStats?.accepted || 0,
+      icon: Users,
+      color: "text-green-400",
+      bg: "bg-green-400/20",
+      change: `${requestStats?.acceptance_rate?.toFixed(0) || 0}% acceptance rate`,
+    },
+    {
+      label: "Pending",
+      value: requestStats?.pending || 0,
+      icon: Clock,
+      color: "text-yellow-400",
+      bg: "bg-yellow-400/20",
+      change: "Awaiting response",
+    },
+    {
+      label: "This Week",
+      value: requestStats?.this_week || 0,
+      icon: TrendingUp,
+      color: "text-blue-400",
+      bg: "bg-blue-400/20",
+      change: `${requestStats?.total_requests || 0} total`,
+    },
+  ]
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -77,11 +101,11 @@ export function RequestStats() {
         <div className="space-y-2">
           <button className="w-full text-left p-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl transition-all duration-300">
             <div className="text-sm font-medium text-white">Review all pending</div>
-            <div className="text-xs text-white/60">8 requests waiting</div>
+            <div className="text-xs text-white/60">{requestStats?.pending || 0} requests waiting</div>
           </button>
           <button className="w-full text-left p-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl transition-all duration-300">
             <div className="text-sm font-medium text-white">View accepted matches</div>
-            <div className="text-xs text-white/60">23 successful connections</div>
+            <div className="text-xs text-white/60">{requestStats?.accepted || 0} successful connections</div>
           </button>
         </div>
       </div>

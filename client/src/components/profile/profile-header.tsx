@@ -6,6 +6,7 @@ import { Camera, Edit3, Share, MapPin, Briefcase, Calendar, Verified } from "luc
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import { api } from "@/lib/api"
+import { useAuth } from "@/contexts/auth-context"
 
 // User profile interface to match actual API response
 interface UserProfile {
@@ -38,6 +39,17 @@ interface ProfileHeaderProps {
 export function ProfileHeader({ userProfile }: ProfileHeaderProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [primaryImage, setPrimaryImage] = useState<string>("/default.jpg")
+  const { user } = useAuth()
+
+  // Get name from localStorage as immediate fallback
+  const storedName = typeof window !== 'undefined' ? localStorage.getItem('user_name') : null
+  
+  // Use auth context user as fallback for immediate display
+  const displayName = userProfile?.Name || user?.name || storedName || "User"
+  const displayAge = userProfile?.Age || user?.age || 0
+  const displayCity = userProfile?.City || user?.city || "Location not specified"
+  const displayGender = userProfile?.Gender || user?.gender || ""
+  const displayTotalScore = userProfile?.TotalScore || user?.totalScore || 0
 
   // Fetch user images and find primary
   useEffect(() => {
@@ -105,7 +117,7 @@ export function ProfileHeader({ userProfile }: ProfileHeaderProps) {
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
               <div className="flex items-center justify-center sm:justify-start gap-2">
                 <h1 className="text-3xl sm:text-4xl font-bold text-white">
-                  {userProfile?.Name || "Loading..."}
+                  {displayName}
                 </h1>
                 <Verified className="h-6 w-6 text-blue-400" />
               </div>
@@ -135,7 +147,7 @@ export function ProfileHeader({ userProfile }: ProfileHeaderProps) {
               <div className="flex items-center justify-center sm:justify-start gap-2">
                 <MapPin className="h-4 w-4 text-[#FF0059] flex-shrink-0" />
                 <span className="text-sm">
-                  {userProfile?.City || "Location not specified"}, Age: {userProfile?.Age || "N/A"}
+                  {displayCity}, Age: {displayAge || "N/A"}
                 </span>
               </div>
               <div className="flex items-center justify-center sm:justify-start gap-2">
@@ -152,8 +164,8 @@ export function ProfileHeader({ userProfile }: ProfileHeaderProps) {
 
             {/* Bio */}
             <p className="text-white/70 text-sm sm:text-base leading-relaxed mt-4 max-w-2xl">
-              Gender: {userProfile?.Gender === 'M' ? 'Male' : userProfile?.Gender === 'F' ? 'Female' : 'Not specified'} | 
-              Total Score: {userProfile?.TotalScore || 0} | 
+              Gender: {displayGender === 'M' ? 'Male' : displayGender === 'F' ? 'Female' : 'Not specified'} | 
+              Total Score: {displayTotalScore} | 
               Passionate about connecting with like-minded individuals and building meaningful relationships. 
               When I'm not working, you'll find me exploring new places and trying new experiences around the city.
             </p>

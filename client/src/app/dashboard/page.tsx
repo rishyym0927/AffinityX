@@ -14,6 +14,7 @@ import { useRecommendations, type Candidate } from "@/hooks/use-recommendations"
 import { RecommendationFiltersComponent } from "@/components/dashboard/recommendation-filters"
 import { api } from "@/lib/api"
 import { useRouter } from "next/navigation"
+import { useDashboardStats } from "@/hooks/use-stats"
 
 
 
@@ -44,11 +45,11 @@ const DAILY_TIPS = [
 // Using the first tip as the current daily tip
 const DAILY_TIP = DAILY_TIPS[0]
 
-// Profile Statistics (Initial Values)
-const INITIAL_STATS = {
-  matches: 12,
-  views: 47,
-}
+// Profile Statistics (Initial Values) - removed as we'll use real data
+// const INITIAL_STATS = {
+//   matches: 12,
+//   views: 47,
+// }
 
 // Quick Action Items
 const QUICK_ACTIONS = [
@@ -96,6 +97,9 @@ export default function DashboardPage() {
   const [recentMatches, setRecentMatches] = useState<RecentMatch[]>([])
   const [loadingMatches, setLoadingMatches] = useState(false)
   const router = useRouter()
+
+  // Fetch dashboard statistics
+  const { dashboardStats, isLoading: statsLoading, error: statsError } = useDashboardStats()
 
   // Use recommendations context
   const {
@@ -248,9 +252,9 @@ export default function DashboardPage() {
               {/* Left Sidebar - Stats & Activity */}
               <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 space-y-6 order-2 lg:order-1">
                 <QuickStats 
-                  likes={likedUsers.length} 
-                  matches={INITIAL_STATS.matches} 
-                  views={INITIAL_STATS.views} 
+                  likes={dashboardStats?.activity_stats?.likes || 0} 
+                  matches={dashboardStats?.activity_stats?.matches || 0} 
+                  views={dashboardStats?.activity_stats?.profile_views || 0} 
                 />
                 <ActivityFeed />
             </div>

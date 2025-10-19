@@ -170,6 +170,22 @@ export const api = {
     apiRequest(`/api/user/image/${imageId}/delete`, {
       method: 'DELETE',
     }),
+
+  // Statistics
+  getUserStats: () =>
+    apiRequest('/api/stats/activity'),
+
+  getWeeklyActivity: () =>
+    apiRequest('/api/stats/weekly'),
+
+  getRequestStats: () =>
+    apiRequest('/api/stats/requests'),
+
+  getProfileAnalytics: () =>
+    apiRequest('/api/stats/analytics'),
+
+  getDashboardStats: () =>
+    apiRequest('/api/stats/dashboard'),
 }
 
 export default api

@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion"
 import { TrendingUp, Heart, Users, MessageCircle, Eye, Star, Zap, Calendar, Brain, Sparkles } from "lucide-react"
+import { useWeeklyActivity, useProfileAnalytics } from "@/hooks/use-stats"
 
 // User profile interface to match actual API response
 interface UserProfile {
@@ -23,28 +24,47 @@ interface ProfileStatsProps {
   userProfile?: UserProfile | null
 }
 
-
-
-const weeklyActivity = [
-  { day: "Mon", likes: 12, matches: 3 },
-  { day: "Tue", likes: 18, matches: 5 },
-  { day: "Wed", likes: 8, matches: 2 },
-  { day: "Thu", likes: 22, matches: 7 },
-  { day: "Fri", likes: 15, matches: 4 },
-  { day: "Sat", likes: 28, matches: 9 },
-  { day: "Sun", likes: 20, matches: 6 },
-]
-
 export function ProfileStats({ userProfile }: ProfileStatsProps) {
-  // Create stats array with mix of real data and mock data
+  // Fetch real analytics and weekly activity data
+  const { analytics, isLoading: analyticsLoading } = useProfileAnalytics()
+  const { weeklyActivity, isLoading: weeklyLoading } = useWeeklyActivity()
+
+  // Use real data from API or fallback to userProfile prop
+  const communication = analytics?.communication || userProfile?.Communication || 0
+  const confidence = analytics?.confidence || userProfile?.Confidence || 0
+  const emotional = analytics?.emotional || userProfile?.Emotional || 0
+  const personality = analytics?.personality || userProfile?.Personality || 0
+  const totalScore = analytics?.total_score || userProfile?.TotalScore || 0
+  const profileRating = analytics?.profile_rating || 4.8
+
+    // Create stats array with real data
   const stats = [
-    { label: "Communication", value: userProfile?.Communication || 0, icon: MessageCircle, color: "text-[#FF0059]", bg: "bg-[#FF0059]/20", change: "+12%", max: 10 },
-    { label: "Confidence", value: userProfile?.Confidence || 0, icon: Zap, color: "text-green-400", bg: "bg-green-400/20", change: "+8%", max: 10 },
-    { label: "Emotional IQ", value: userProfile?.Emotional || 0, icon: Heart, color: "text-blue-400", bg: "bg-blue-400/20", change: "+15%", max: 10 },
-    { label: "Personality", value: userProfile?.Personality || 0, icon: Sparkles, color: "text-purple-400", bg: "bg-purple-400/20", change: "+23%", max: 10 },
-    { label: "Total Score", value: userProfile?.TotalScore || 0, icon: Brain, color: "text-yellow-400", bg: "bg-yellow-400/20", change: "+5%", max: 40 },
-    { label: "Profile Rating", value: 4.8, icon: Star, color: "text-orange-400", bg: "bg-orange-400/20", change: "+0.2", max: 5 },
+    { label: "Communication", value: communication, icon: MessageCircle, color: "text-[#FF0059]", bg: "bg-[#FF0059]/20", change: "+12%", max: 10 },
+    { label: "Confidence", value: confidence, icon: Zap, color: "text-green-400", bg: "bg-green-400/20", change: "+8%", max: 10 },
+    { label: "Emotional IQ", value: emotional, icon: Heart, color: "text-blue-400", bg: "bg-blue-400/20", change: "+15%", max: 10 },
+    { label: "Personality", value: personality, icon: Sparkles, color: "text-purple-400", bg: "bg-purple-400/20", change: "+23%", max: 10 },
+    { label: "Total Score", value: totalScore, icon: Brain, color: "text-yellow-400", bg: "bg-yellow-400/20", change: "+5%", max: 40 },
+    { label: "Profile Rating", value: profileRating, icon: Star, color: "text-orange-400", bg: "bg-orange-400/20", change: "+0.2", max: 5 },
   ]
+
+  // Show loading state
+  if (analyticsLoading || weeklyLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6">
+          <div className="animate-pulse">
+            <div className="h-6 bg-white/10 rounded w-1/3 mb-6"></div>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="h-16 bg-white/5 rounded-xl"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Main Stats */}
@@ -105,26 +125,32 @@ export function ProfileStats({ userProfile }: ProfileStatsProps) {
         </div>
 
         <div className="space-y-4">
-          {weeklyActivity.map((day, index) => (
-            <motion.div
-              key={day.day}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
-              className="flex items-center gap-4"
-            >
-              <div className="w-8 text-xs font-medium text-white/60">{day.day}</div>
-              <div className="flex-1 flex items-center gap-2">
-                <div className="flex-1 bg-white/10 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#FF0059] to-[#FF0059]/80 rounded-full transition-all duration-500"
-                    style={{ width: `${(day.likes / 30) * 100}%` }}
-                  />
+          {weeklyActivity && weeklyActivity.length > 0 ? (
+            weeklyActivity.map((day, index) => (
+              <motion.div
+                key={day.day}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                className="flex items-center gap-4"
+              >
+                <div className="w-8 text-xs font-medium text-white/60">{day.day}</div>
+                <div className="flex-1 flex items-center gap-2">
+                  <div className="flex-1 bg-white/10 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-[#FF0059] to-[#FF0059]/80 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min((day.likes / 30) * 100, 100)}%` }}
+                    />
+                  </div>
+                  <div className="text-xs text-white/70 w-8 text-right">{day.likes}</div>
                 </div>
-                <div className="text-xs text-white/70 w-8 text-right">{day.likes}</div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))
+          ) : (
+            <div className="py-6 text-center text-white/60 text-sm">
+              No activity data yet. Start swiping!
+            </div>
+          )}
         </div>
       </motion.div>
     </div>

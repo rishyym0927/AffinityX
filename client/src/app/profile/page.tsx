@@ -33,11 +33,16 @@ export default function ProfilePage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
 
   // Fetch user profile data
   useEffect(() => {
     const fetchUserProfile = async () => {
+      // Wait for auth to finish loading
+      if (authLoading) {
+        return
+      }
+
       try {
         setIsLoading(true)
         setError(null)
@@ -45,6 +50,7 @@ export default function ProfilePage() {
         const userId = getUserId()
         if (!userId) {
           setError("User ID not found")
+          setIsLoading(false)
           return
         }
 
@@ -64,10 +70,11 @@ export default function ProfilePage() {
       }
     }
 
-    if (user) {
+    // Only fetch when auth is done loading
+    if (!authLoading) {
       fetchUserProfile()
     }
-  }, [user])
+  }, [authLoading])
 
   // Listen for gallery tab open event
   useEffect(() => {
