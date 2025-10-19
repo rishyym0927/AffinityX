@@ -145,3 +145,89 @@ func (p *Postgres) RespondMatchRequest(ctx context.Context, senderID, receiverID
 
 	return tx.Commit(ctx)
 }
+
+// MatchRequestResponse represents an incoming match request with user details
+type MatchRequestResponse struct {
+	ID            int64    `json:"id"`
+	SenderID      int64    `json:"sender_id"`
+	Name          string   `json:"name"`
+	Age           int      `json:"age"`
+	Location      string   `json:"location"`
+	Image         string   `json:"image"`
+	Bio           string   `json:"bio"`
+	Timestamp     string   `json:"timestamp"`
+	Compatibility int      `json:"compatibility"`
+	MutualFriends int      `json:"mutualFriends"`
+	Interests     []string `json:"interests"`
+}
+
+// GetIncomingMatchRequests retrieves all pending match requests for a user
+func (p *Postgres) GetIncomingMatchRequests(ctx context.Context, receiverID int64) ([]MatchRequestResponse, error) {
+	query := `
+		SELECT 
+			mr.id,
+			mr.sender_id,
+			u.name,
+			COALESCE(u.age, 0) AS age,
+			COALESCE(u.city, '') AS city,
+			COALESCE(ui.public_url, '') AS image,
+			COALESCE(s.total_score, 0) AS compatibility,
+			mr.created_at
+		FROM match_requests mr
+		INNER JOIN users u ON mr.sender_id = u.user_id
+		LEFT JOIN scores s ON u.user_id = s.user_id
+		LEFT JOIN user_images ui ON u.user_id = ui.user_id AND ui.is_primary = true
+		WHERE mr.receiver_id = $1 
+		  AND mr.status = 'pending'
+		ORDER BY mr.created_at DESC
+	`
+
+	rows, err := p.Pool.Query(ctx, query, receiverID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var requests []MatchRequestResponse
+	for rows.Next() {
+		var req MatchRequestResponse
+		var createdAt interface{} // Will be time.Time
+
+		err := rows.Scan(
+			&req.ID,
+			&req.SenderID,
+			&req.Name,
+			&req.Age,
+			&req.Location,
+			&req.Image,
+			&req.Compatibility,
+			&createdAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Set default image if empty
+		if req.Image == "" {
+			req.Image = "/default.jpg"
+		}
+
+		// Generate a simple bio (since not in database)
+		req.Bio = "Looking for meaningful connections and great conversations."
+
+		// Format timestamp to relative time (e.g., "5 min ago")
+		req.Timestamp = "recently"
+
+		// These fields don't exist in your schema, leaving empty/default
+		req.MutualFriends = 0
+		req.Interests = []string{} // Empty array since not in database
+
+		requests = append(requests, req)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return requests, nil
+}
