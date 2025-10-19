@@ -86,7 +86,7 @@ CREATE INDEX IF NOT EXISTS idx_messages_match ON messages(match_id, sent_at);
 CREATE TABLE IF NOT EXISTS user_images (
   id           BIGSERIAL PRIMARY KEY,
   user_id      BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  object_name  TEXT    NOT NULL,         -- e.g. user/123/5f1a...jpg
+  object_name  TEXT    NULL,         -- e.g. user/123/5f1a...jpg
   public_url   TEXT,                     -- optional, if bucket is public
   is_primary   BOOLEAN DEFAULT FALSE,
   uploaded_at  TIMESTAMP DEFAULT NOW()

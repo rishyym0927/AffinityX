@@ -2,6 +2,7 @@
 import { Heart, X, Zap, MapPin, Briefcase, Wifi, WifiOff } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 
 interface User {
   id: string
@@ -28,6 +29,7 @@ interface UserCardProps {
 
 export function UserCard({ user, onLike, onReject, onSuperLike, isAnimating }: UserCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const router = useRouter()
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % user.images.length)
@@ -37,8 +39,20 @@ export function UserCard({ user, onLike, onReject, onSuperLike, isAnimating }: U
     setCurrentImageIndex((prev) => (prev - 1 + user.images.length) % user.images.length)
   }
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on buttons or navigation arrows
+    const target = e.target as HTMLElement
+    if (target.closest('button')) {
+      return
+    }
+    router.push(`/user/${user.id}`)
+  }
+
   return (
-    <div className="w-full max-w-sm mx-auto bg-black/60 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl shadow-[#FF0059]/10 relative">
+    <div 
+      onClick={handleCardClick}
+      className="w-full max-w-sm mx-auto bg-black/60 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl shadow-[#FF0059]/10 relative cursor-pointer hover:border-white/20 transition-colors"
+    >
       {/* Image Section */}
       <div className="relative h-64 sm:h-80 overflow-hidden">
         <Image
@@ -54,14 +68,20 @@ export function UserCard({ user, onLike, onReject, onSuperLike, isAnimating }: U
         {user.images.length > 1 && (
           <>
             <button
-              onClick={prevImage}
-              className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors"
+              onClick={(e) => {
+                e.stopPropagation()
+                prevImage()
+              }}
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors z-10"
             >
               ←
             </button>
             <button
-              onClick={nextImage}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors"
+              onClick={(e) => {
+                e.stopPropagation()
+                nextImage()
+              }}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors z-10"
             >
               →
             </button>

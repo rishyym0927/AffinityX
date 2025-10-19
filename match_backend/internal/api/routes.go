@@ -54,6 +54,7 @@ func (s *Server) setupProtectedRoutes(r *chi.Mux) {
 		pr.Get("/api/user/profile/{id}", s.getProfile)
 		pr.Post("/api/user/upload", s.uploadUserImages)
 		pr.Get("/api/user/images", s.listUserImages)
+		pr.Get("/api/user/images/{id}", s.getUserImagesById)
 		pr.Post("/api/user/image/{id}/primary", s.setPrimaryImage)
 		pr.Delete("/api/user/image/{id}/delete", s.deleteUserImage)
 
@@ -63,6 +64,7 @@ func (s *Server) setupProtectedRoutes(r *chi.Mux) {
 		// Matching routes
 		pr.Get("/api/match/recommendations", s.matchRecommendations)
 		pr.Get("/api/match/incoming-requests", s.getIncomingRequests)
+		pr.Get("/api/match/recent", s.getRecentMatches)
 		pr.Post("/api/match/request", s.matchRequest)
 		pr.Post("/api/match/respond", s.matchRespond)
 

@@ -86,6 +86,9 @@ export const api = {
   getProfile: (userId: number) =>
     apiRequest(`/api/user/profile/${userId}`),
 
+  getUserImages: (userId: number) =>
+    apiRequest(`/api/user/images/${userId}`),
+
   // Chatbot Score
   submitScore: (scores: { personality: number; communication: number; emotional: number; confidence: number }) =>
     apiRequest('/api/chatbot/submit-score', {

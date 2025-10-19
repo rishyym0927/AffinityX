@@ -75,6 +75,23 @@ func (s *Server) listUserImages(w http.ResponseWriter, r *http.Request) {
 	s.responseJSON(w, map[string]any{"images": imgs}, http.StatusOK)
 }
 
+// getUserImagesById retrieves all images for a specific user by ID
+func (s *Server) getUserImagesById(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		s.errorJSON(w, "invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	imgs, err := s.repo.GetUserImages(r.Context(), id)
+	if err != nil {
+		s.errorJSON(w, "failed to fetch images", http.StatusInternalServerError)
+		return
+	}
+
+	s.responseJSON(w, map[string]any{"images": imgs}, http.StatusOK)
+}
+
 // setPrimaryImage sets an image as the user's primary profile picture
 func (s *Server) setPrimaryImage(w http.ResponseWriter, r *http.Request) {
 	uid := userIDFromCtx(r)

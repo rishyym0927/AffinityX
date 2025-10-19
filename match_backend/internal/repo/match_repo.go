@@ -231,3 +231,110 @@ func (p *Postgres) GetIncomingMatchRequests(ctx context.Context, receiverID int6
 
 	return requests, nil
 }
+
+// MatchResponse represents a recent match with user details
+type MatchResponse struct {
+	MatchID       int64  `json:"match_id"`
+	UserID        int64  `json:"user_id"`
+	Name          string `json:"name"`
+	Age           int    `json:"age"`
+	Location      string `json:"location"`
+	Image         string `json:"image"`
+	Bio           string `json:"bio"`
+	MatchedAt     string `json:"matched_at"`
+	Compatibility int    `json:"compatibility"`
+	LastMessage   string `json:"last_message,omitempty"`
+	LastMessageAt string `json:"last_message_at,omitempty"`
+	UnreadCount   int    `json:"unread_count"`
+}
+
+// GetRecentMatches retrieves all recent matches for a user
+func (p *Postgres) GetRecentMatches(ctx context.Context, userID int64) ([]MatchResponse, error) {
+	query := `
+		SELECT 
+			m.id AS match_id,
+			CASE 
+				WHEN m.user1_id = $1 THEN m.user2_id
+				ELSE m.user1_id
+			END AS matched_user_id,
+			u.name,
+			COALESCE(u.age, 0) AS age,
+			COALESCE(u.city, '') AS city,
+			COALESCE(ui.public_url, '') AS image,
+			COALESCE(s.total_score, 0) AS compatibility,
+			m.matched_at,
+			COALESCE(msg.body, '') AS last_message,
+			msg.sent_at AS last_message_at
+		FROM matches m
+		INNER JOIN users u ON (
+			CASE 
+				WHEN m.user1_id = $1 THEN m.user2_id
+				ELSE m.user1_id
+			END = u.user_id
+		)
+		LEFT JOIN scores s ON u.user_id = s.user_id
+		LEFT JOIN user_images ui ON u.user_id = ui.user_id AND ui.is_primary = true
+		LEFT JOIN LATERAL (
+			SELECT body, sent_at
+			FROM messages
+			WHERE match_id = m.id
+			ORDER BY sent_at DESC
+			LIMIT 1
+		) msg ON true
+		WHERE m.user1_id = $1 OR m.user2_id = $1
+		ORDER BY COALESCE(msg.sent_at, m.matched_at) DESC
+	`
+
+	rows, err := p.Pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var matches []MatchResponse
+	for rows.Next() {
+		var match MatchResponse
+		var matchedAt, lastMessageAt interface{}
+
+		err := rows.Scan(
+			&match.MatchID,
+			&match.UserID,
+			&match.Name,
+			&match.Age,
+			&match.Location,
+			&match.Image,
+			&match.Compatibility,
+			&matchedAt,
+			&match.LastMessage,
+			&lastMessageAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Set default image if empty
+		if match.Image == "" {
+			match.Image = "/default.jpg"
+		}
+
+		// Generate a simple bio (since not in database)
+		match.Bio = "Looking for meaningful connections and great conversations."
+
+		// Format timestamps
+		match.MatchedAt = "recently"
+		if match.LastMessage != "" {
+			match.LastMessageAt = "recently"
+		}
+
+		// Unread count would require tracking read status in DB, defaulting to 0
+		match.UnreadCount = 0
+
+		matches = append(matches, match)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return matches, nil
+}

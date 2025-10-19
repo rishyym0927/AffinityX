@@ -97,3 +97,16 @@ func (s *Server) getIncomingRequests(w http.ResponseWriter, r *http.Request) {
 
 	s.responseJSON(w, map[string]any{"requests": requests}, http.StatusOK)
 }
+
+// getRecentMatches retrieves all recent matches for a user
+func (s *Server) getRecentMatches(w http.ResponseWriter, r *http.Request) {
+	uid := userIDFromCtx(r)
+
+	matches, err := s.repo.GetRecentMatches(r.Context(), uid)
+	if err != nil {
+		s.errorJSON(w, "failed to fetch recent matches", http.StatusInternalServerError)
+		return
+	}
+
+	s.responseJSON(w, map[string]any{"matches": matches}, http.StatusOK)
+}
