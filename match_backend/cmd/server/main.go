@@ -62,5 +62,3 @@ func main() {
 	log.Println("🛑 Shutting down...")
 	_ = srv.Shutdown(context.Background())
 }
-
-//how to implememnt cors

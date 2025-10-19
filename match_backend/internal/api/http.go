@@ -39,7 +39,7 @@ func NewServer(cfg config.Config, r *repo.Postgres, m *core.Matcher, cloud *stor
 		repo:       r,
 		matcher:    m,
 		cloudinary: cloud,
-		jwtSecret:  []byte("super-secret-key"), // use env var in prod
+		jwtSecret:  []byte(cfg.JWTSecret),
 	}
 }
 
@@ -51,15 +51,13 @@ func (s *Server) Routes() http.Handler {
 	r.Use(middleware.Recoverer)
 
 	// CORS middleware
-	//complete basic cors setup to allow requests from any origin
-
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: false,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
+		MaxAge:           300,
 	}))
 
 	// ---- Public routes ----
@@ -98,6 +96,7 @@ func (s *Server) Routes() http.Handler {
 // ==================== HEALTH ====================
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
@@ -115,47 +114,75 @@ type AuthRequest struct {
 func (s *Server) signup(w http.ResponseWriter, r *http.Request) {
 	var req AuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid body", 400)
+		s.errorJSON(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
-	hashed, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+
+	// Validation
+	if req.Email == "" || req.Password == "" || req.Name == "" {
+		s.errorJSON(w, "name, email, and password are required", http.StatusBadRequest)
+		return
+	}
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		s.errorJSON(w, "password hashing failed", http.StatusInternalServerError)
+		return
+	}
+
 	uid, err := s.repo.CreateUser(r.Context(), repo.SignupInput{
 		Name: req.Name, Email: req.Email, PasswordHash: string(hashed), Gender: req.Gender, Age: req.Age, City: req.City,
 	})
 	if err != nil {
-		http.Error(w, "failed to create user: "+err.Error(), 500)
+		s.errorJSON(w, "failed to create user: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	token := s.createToken(uid)
-	json.NewEncoder(w).Encode(map[string]any{"token": token, "user_id": uid})
+	s.responseJSON(w, map[string]any{"token": token, "user_id": uid}, http.StatusCreated)
 }
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Email, Password string
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid body", 400)
+		s.errorJSON(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
+
+	if req.Email == "" || req.Password == "" {
+		s.errorJSON(w, "email and password are required", http.StatusBadRequest)
+		return
+	}
+
 	user, err := s.repo.GetUserByEmail(r.Context(), req.Email)
-	if err != nil || bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)) != nil {
-		http.Error(w, "invalid credentials", 401)
+	if err != nil {
+		s.errorJSON(w, "invalid credentials", http.StatusUnauthorized)
 		return
 	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		s.errorJSON(w, "invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
 	token := s.createToken(user.ID)
-	json.NewEncoder(w).Encode(map[string]any{"token": token, "user_id": user.ID})
+	s.responseJSON(w, map[string]any{"token": token, "user_id": user.ID}, http.StatusOK)
 }
 
 func (s *Server) createToken(uid int64) string {
 	claims := jwt.MapClaims{
 		"user_id": uid,
-		"exp":     time.Now().Add(72 * time.Hour).Unix(),
+		"exp":     time.Now().Add(time.Duration(s.cfg.JWTTTLHours) * time.Hour).Unix(),
+		"iat":     time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, err := token.SignedString(s.jwtSecret)
 	if err != nil {
 		fmt.Println("JWT sign error:", err)
+		return ""
 	}
 	return signed
 }
@@ -163,13 +190,19 @@ func (s *Server) createToken(uid int64) string {
 // ==================== USER PROFILE ====================
 
 func (s *Server) getProfile(w http.ResponseWriter, r *http.Request) {
-	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
-	user, err := s.repo.GetUser(r.Context(), id)
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
-		http.Error(w, "user not found", 404)
+		s.errorJSON(w, "invalid user ID", http.StatusBadRequest)
 		return
 	}
-	json.NewEncoder(w).Encode(user)
+
+	user, err := s.repo.GetUser(r.Context(), id)
+	if err != nil {
+		s.errorJSON(w, "user not found", http.StatusNotFound)
+		return
+	}
+
+	s.responseJSON(w, user, http.StatusOK)
 }
 
 // ==================== CHATBOT SCORE ====================
@@ -183,16 +216,27 @@ func (s *Server) submitScore(w http.ResponseWriter, r *http.Request) {
 		Confidence    int `json:"confidence"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&sc); err != nil {
-		http.Error(w, "invalid json", 400)
+		s.errorJSON(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
+
+	// Validate scores (0-100 range)
+	if sc.Personality < 0 || sc.Personality > 100 ||
+		sc.Communication < 0 || sc.Communication > 100 ||
+		sc.Emotional < 0 || sc.Emotional > 100 ||
+		sc.Confidence < 0 || sc.Confidence > 100 {
+		s.errorJSON(w, "scores must be between 0 and 100", http.StatusBadRequest)
+		return
+	}
+
 	total := (sc.Personality + sc.Communication + sc.Emotional + sc.Confidence) / 4
 	err := s.repo.UpsertScores(r.Context(), uid, sc.Personality, sc.Communication, sc.Emotional, sc.Confidence, total)
 	if err != nil {
-		http.Error(w, "db error: "+err.Error(), 500)
+		s.errorJSON(w, "failed to update scores", http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]any{"message": "score updated", "total_score": total})
+
+	s.responseJSON(w, map[string]any{"message": "score updated", "total_score": total}, http.StatusOK)
 }
 
 // ==================== MATCHING ====================
@@ -202,15 +246,16 @@ func (s *Server) matchRecommendations(w http.ResponseWriter, r *http.Request) {
 	ageMin, _ := strconv.Atoi(r.URL.Query().Get("age_min"))
 	ageMax, _ := strconv.Atoi(r.URL.Query().Get("age_max"))
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	if limit == 0 {
+
+	if limit <= 0 || limit > 50 {
 		limit = 10
 	}
 
-	// core.MatchPrefs uses TargetGender as rune and doesn't have ViewerID; adapt accordingly
 	var tg rune
 	if gender != "" {
 		tg = []rune(gender)[0]
 	}
+
 	prefs := core.MatchPrefs{
 		TargetGender: tg,
 		AgeMin:       ageMin,
@@ -219,25 +264,41 @@ func (s *Server) matchRecommendations(w http.ResponseWriter, r *http.Request) {
 		MinScore:     60,
 	}
 
-	users, _, err := s.repo.FetchCandidates(r.Context(), prefs)
+	users, nextCursor, err := s.repo.FetchCandidates(r.Context(), prefs)
 	if err != nil {
-		http.Error(w, "db error: "+err.Error(), 500)
+		s.errorJSON(w, "failed to fetch recommendations", http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]any{"candidates": users})
+
+	s.responseJSON(w, map[string]any{"candidates": users, "next_cursor": nextCursor}, http.StatusOK)
 }
 
 func (s *Server) matchRequest(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		ReceiverID int64 `json:"receiver_id"`
 	}
-	json.NewDecoder(r.Body).Decode(&req)
-	sender := userIDFromCtx(r)
-	if err := s.repo.SendMatchRequest(r.Context(), sender, req.ReceiverID); err != nil {
-		http.Error(w, err.Error(), 500)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.errorJSON(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]string{"message": "request sent"})
+
+	if req.ReceiverID <= 0 {
+		s.errorJSON(w, "invalid receiver_id", http.StatusBadRequest)
+		return
+	}
+
+	sender := userIDFromCtx(r)
+	if sender == req.ReceiverID {
+		s.errorJSON(w, "cannot send request to yourself", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.repo.SendMatchRequest(r.Context(), sender, req.ReceiverID); err != nil {
+		s.errorJSON(w, "failed to send match request", http.StatusInternalServerError)
+		return
+	}
+
+	s.responseJSON(w, map[string]string{"message": "request sent"}, http.StatusOK)
 }
 
 func (s *Server) matchRespond(w http.ResponseWriter, r *http.Request) {
@@ -245,18 +306,28 @@ func (s *Server) matchRespond(w http.ResponseWriter, r *http.Request) {
 		SenderID int64 `json:"sender_id"`
 		Accept   bool  `json:"accept"`
 	}
-	json.NewDecoder(r.Body).Decode(&req)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.errorJSON(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.SenderID <= 0 {
+		s.errorJSON(w, "invalid sender_id", http.StatusBadRequest)
+		return
+	}
+
 	receiver := userIDFromCtx(r)
 	err := s.repo.RespondMatchRequest(r.Context(), req.SenderID, receiver, req.Accept)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		s.errorJSON(w, "failed to respond to match request", http.StatusInternalServerError)
 		return
 	}
+
 	msg := "rejected"
 	if req.Accept {
 		msg = "accepted"
 	}
-	json.NewEncoder(w).Encode(map[string]string{"message": msg})
+	s.responseJSON(w, map[string]string{"message": msg}, http.StatusOK)
 }
 
 // ==================== CHAT ====================
@@ -266,23 +337,39 @@ func (s *Server) chatSend(w http.ResponseWriter, r *http.Request) {
 		MatchID int64  `json:"match_id"`
 		Message string `json:"message"`
 	}
-	json.NewDecoder(r.Body).Decode(&req)
-	uid := userIDFromCtx(r)
-	if _, err := s.repo.InsertMessage(r.Context(), req.MatchID, uid, req.Message); err != nil {
-		http.Error(w, "send failed", 500)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.errorJSON(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]string{"message": "sent"})
+
+	if req.MatchID <= 0 || req.Message == "" {
+		s.errorJSON(w, "match_id and message are required", http.StatusBadRequest)
+		return
+	}
+
+	uid := userIDFromCtx(r)
+	if _, err := s.repo.InsertMessage(r.Context(), req.MatchID, uid, req.Message); err != nil {
+		s.errorJSON(w, "failed to send message", http.StatusInternalServerError)
+		return
+	}
+
+	s.responseJSON(w, map[string]string{"message": "sent"}, http.StatusOK)
 }
 
 func (s *Server) chatGet(w http.ResponseWriter, r *http.Request) {
-	matchID, _ := strconv.ParseInt(chi.URLParam(r, "match_id"), 10, 64)
-	msgs, err := s.repo.GetMessages(r.Context(), matchID, 100)
+	matchID, err := strconv.ParseInt(chi.URLParam(r, "match_id"), 10, 64)
 	if err != nil {
-		http.Error(w, "fetch failed", 500)
+		s.errorJSON(w, "invalid match_id", http.StatusBadRequest)
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]any{"messages": msgs})
+
+	msgs, err := s.repo.GetMessages(r.Context(), matchID, 100)
+	if err != nil {
+		s.errorJSON(w, "failed to fetch messages", http.StatusInternalServerError)
+		return
+	}
+
+	s.responseJSON(w, map[string]any{"messages": msgs}, http.StatusOK)
 }
 
 // ==================== IMAGE UPLOADS (CLOUDINARY) ====================
@@ -290,78 +377,106 @@ func (s *Server) chatGet(w http.ResponseWriter, r *http.Request) {
 func (s *Server) uploadUserImages(w http.ResponseWriter, r *http.Request) {
 	uid := userIDFromCtx(r)
 	if err := r.ParseMultipartForm(20 << 20); err != nil {
-		http.Error(w, "invalid form", 400)
+		s.errorJSON(w, "invalid form data", http.StatusBadRequest)
 		return
 	}
 
 	files := r.MultipartForm.File["images"]
 	if len(files) == 0 {
-		http.Error(w, "no files", 400)
+		s.errorJSON(w, "no files provided", http.StatusBadRequest)
+		return
+	}
+
+	if len(files) > 10 {
+		s.errorJSON(w, "maximum 10 images allowed", http.StatusBadRequest)
 		return
 	}
 
 	var uploaded []string
-	// repo provides GetUserImages and AddUserImage/SetPrimaryImage; no HasPrimaryImage helper
 
 	for _, fh := range files {
 		f, err := fh.Open()
 		if err != nil {
-			http.Error(w, "open failed", 500)
+			s.errorJSON(w, "failed to open file", http.StatusInternalServerError)
 			return
 		}
 		defer f.Close()
 
 		url, err := s.cloudinary.Upload(r.Context(), f, fh, uid)
 		if err != nil {
-			http.Error(w, "upload failed: "+err.Error(), 500)
+			s.errorJSON(w, "upload failed: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		if err := s.repo.AddUserImage(r.Context(), uid, url); err != nil {
-			http.Error(w, "db failed", 500)
+			s.errorJSON(w, "failed to save image", http.StatusInternalServerError)
 			return
 		}
+
 		uploaded = append(uploaded, url)
 	}
-	if len(uploaded) > 0 {
-		// set first uploaded as primary
-		// need image id to set primary; repo currently doesn't return the id on AddUserImage,
-		// so skipping automatic primary set for now.
-	}
 
-	json.NewEncoder(w).Encode(map[string]any{
+	s.responseJSON(w, map[string]any{
 		"message":  "upload successful",
 		"uploaded": uploaded,
-	})
+	}, http.StatusOK)
 }
 
 func (s *Server) listUserImages(w http.ResponseWriter, r *http.Request) {
 	uid := userIDFromCtx(r)
 	imgs, err := s.repo.GetUserImages(r.Context(), uid)
 	if err != nil {
-		http.Error(w, "db error", 500)
+		s.errorJSON(w, "failed to fetch images", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{"images": imgs})
+
+	s.responseJSON(w, map[string]any{"images": imgs}, http.StatusOK)
 }
 
 func (s *Server) setPrimaryImage(w http.ResponseWriter, r *http.Request) {
 	uid := userIDFromCtx(r)
-	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
-	if err := s.repo.SetPrimaryImage(r.Context(), id, uid); err != nil {
-		http.Error(w, "failed", 500)
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		s.errorJSON(w, "invalid image ID", http.StatusBadRequest)
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]string{"message": "primary image set"})
+
+	if err := s.repo.SetPrimaryImage(r.Context(), id, uid); err != nil {
+		s.errorJSON(w, "failed to set primary image", http.StatusInternalServerError)
+		return
+	}
+
+	s.responseJSON(w, map[string]string{"message": "primary image set"}, http.StatusOK)
 }
 
 func (s *Server) deleteUserImage(w http.ResponseWriter, r *http.Request) {
 	uid := userIDFromCtx(r)
-	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
-	err := s.repo.DeleteUserImage(r.Context(), id, uid)
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
-		http.Error(w, "failed", 500)
+		s.errorJSON(w, "invalid image ID", http.StatusBadRequest)
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]string{"message": "deleted"})
+
+	if err := s.repo.DeleteUserImage(r.Context(), id, uid); err != nil {
+		s.errorJSON(w, "failed to delete image", http.StatusInternalServerError)
+		return
+	}
+
+	s.responseJSON(w, map[string]string{"message": "deleted"}, http.StatusOK)
+}
+
+// ==================== HELPERS ====================
+
+func (s *Server) responseJSON(w http.ResponseWriter, data any, statusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		fmt.Println("JSON encode error:", err)
+	}
+}
+
+func (s *Server) errorJSON(w http.ResponseWriter, message string, statusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
