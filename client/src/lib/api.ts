@@ -82,6 +82,28 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  checkEmail: async (email: string): Promise<{ exists: boolean; error?: string }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/check-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      })
+
+      if (!response.ok) {
+        return { exists: false, error: 'Unable to verify email' }
+      }
+
+      const data = await response.json()
+      return { exists: data.exists || false }
+    } catch (error) {
+      console.error('Email check error:', error)
+      return { exists: false, error: 'Network error' }
+    }
+  },
+
   // User Profile
   getProfile: (userId: number) =>
     apiRequest(`/api/user/profile/${userId}`),

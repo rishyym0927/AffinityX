@@ -6,13 +6,16 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { LocationInput } from "@/components/ui/location-input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowRight, ArrowLeft, Eye, EyeOff, Upload, Check, X } from "lucide-react"
+import { ArrowRight, ArrowLeft, Eye, EyeOff, Upload, Check, X, AlertCircle } from "lucide-react"
 import { useState, type KeyboardEvent } from "react"
 import Link from "next/link"
 import { useAuth, type SignupData } from "@/contexts/auth-context"
 import { PublicRoute } from "@/components/auth/public-route"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { api } from "@/lib/api"
 
 interface FormData {
   firstName: string
@@ -75,6 +78,8 @@ export default function SignupPage() {
   const [expectedQualitiesInput, setExpectedQualitiesInput] = useState("")
   const [socialHabitsInput, setSocialHabitsInput] = useState("")
   const [error, setError] = useState("")
+  const [emailError, setEmailError] = useState("")
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false)
   
   const { signup, isLoading } = useAuth()
   const router = useRouter()
@@ -111,11 +116,42 @@ export default function SignupPage() {
   const strengthLabels = ["Very Weak", "Weak", "Fair", "Good", "Strong"]
   const strengthColors = ["bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-blue-500", "bg-green-500"]
 
+  // Check if email already exists
+  const checkEmailAvailability = async (email: string) => {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return
+    }
+
+    setIsCheckingEmail(true)
+    setEmailError("")
+
+    try {
+      const result = await api.checkEmail(email)
+      
+      if (result.error) {
+        // If backend doesn't support email check, silently continue
+        console.warn("Email check not available:", result.error)
+      } else if (result.exists) {
+        setEmailError("This email is already registered")
+        toast.error("Email Already Registered", {
+          description: "This email is already in use. Please use a different email or try logging in.",
+        })
+      }
+    } catch (error) {
+      console.error("Email check failed:", error)
+    } finally {
+      setIsCheckingEmail(false)
+    }
+  }
+
   const handleNext = () => {
     // Basic validation for each step
     if (currentStep === 1) {
       if (!formData.firstName || !formData.lastName || !formData.gender || !formData.age || !formData.location) {
         setError("Please fill in all required fields")
+        toast.error("Missing Information", {
+          description: "Please fill in all required fields to continue.",
+        })
         return
       }
     }
@@ -123,10 +159,22 @@ export default function SignupPage() {
     if (currentStep === 2) {
       if (!formData.email || !formData.password || !formData.username) {
         setError("Please fill in all required fields")
+        toast.error("Missing Information", {
+          description: "Please fill in all required fields to continue.",
+        })
         return
       }
       if (formData.password.length < 6) {
         setError("Password must be at least 6 characters long")
+        toast.error("Weak Password", {
+          description: "Password must be at least 6 characters long.",
+        })
+        return
+      }
+      if (emailError) {
+        toast.error("Email Issue", {
+          description: "Please resolve the email issue before continuing.",
+        })
         return
       }
     }
@@ -134,6 +182,9 @@ export default function SignupPage() {
     if (currentStep === 3) {
       if (!formData.openness || !formData.relationType || !formData.pastRelationships) {
         setError("Please complete all sections")
+        toast.error("Incomplete Information", {
+          description: "Please complete all sections to continue.",
+        })
         return
       }
     }
@@ -209,19 +260,41 @@ export default function SignupPage() {
     
     // Comprehensive validation
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
-      setError("Please fill in all required fields")
+      const errorMsg = "Please fill in all required fields"
+      setError(errorMsg)
+      toast.error("Missing Information", {
+        description: errorMsg,
+      })
       return
     }
     
     if (!formData.gender || !formData.age || !formData.location) {
-      setError("Please complete your basic information")
+      const errorMsg = "Please complete your basic information"
+      setError(errorMsg)
+      toast.error("Incomplete Profile", {
+        description: errorMsg,
+      })
       return
     }
     
     if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long")
+      const errorMsg = "Password must be at least 6 characters long"
+      setError(errorMsg)
+      toast.error("Weak Password", {
+        description: errorMsg,
+      })
       return
     }
+
+    if (emailError) {
+      toast.error("Email Already Registered", {
+        description: "Please use a different email address.",
+      })
+      return
+    }
+    
+    // Show loading toast
+    const loadingToast = toast.loading("Creating your account...")
     
     // Prepare signup data for backend
     const signupData: SignupData = {
@@ -236,11 +309,40 @@ export default function SignupPage() {
     // Call signup function
     const result = await signup(signupData)
     
+    // Dismiss loading toast
+    toast.dismiss(loadingToast)
+    
     if (result.success) {
+      // Show success toast
+      toast.success("Account Created Successfully!", {
+        description: "Welcome to Affinity! Redirecting to your dashboard...",
+      })
       // Redirect to dashboard or profile completion page
-      router.push("/dashboard")
+      setTimeout(() => {
+        router.push("/dashboard")
+      }, 1000)
     } else {
-      setError(result.error || "Signup failed. Please try again.")
+      const errorMsg = result.error || "Signup failed. Please try again."
+      setError(errorMsg)
+      
+      // Show specific error toasts based on error message
+      if (errorMsg.toLowerCase().includes("email") && errorMsg.toLowerCase().includes("already")) {
+        toast.error("Email Already Registered", {
+          description: "This email is already in use. Please try logging in or use a different email.",
+        })
+      } else if (errorMsg.toLowerCase().includes("password")) {
+        toast.error("Password Error", {
+          description: errorMsg,
+        })
+      } else if (errorMsg.toLowerCase().includes("network")) {
+        toast.error("Connection Error", {
+          description: "Unable to connect to the server. Please check your internet connection and try again.",
+        })
+      } else {
+        toast.error("Signup Failed", {
+          description: errorMsg,
+        })
+      }
     }
   }
 
@@ -317,13 +419,11 @@ export default function SignupPage() {
               <Label htmlFor="location" className="text-sm font-semibold text-white/80 tracking-wide">
                 Location
               </Label>
-              <Input
-                id="location"
-                placeholder="San Francisco, CA"
+              <LocationInput
                 value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, location: value })}
+                placeholder="Start typing your city..."
                 className="bg-white/5 border-white/20 focus:border-[#FF0059] focus:ring-[#FF0059]/30 rounded-xl h-14 font-medium transition-all duration-300 hover:border-white/30"
-                required
               />
             </div>
           </div>
@@ -336,15 +436,38 @@ export default function SignupPage() {
               <Label htmlFor="email" className="text-sm font-semibold text-white/80 tracking-wide">
                 Email Address
               </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="john@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="bg-white/5 border-white/20 focus:border-[#FF0059] focus:ring-[#FF0059]/30 rounded-xl h-14 font-medium transition-all duration-300 hover:border-white/30"
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="john@example.com"
+                  value={formData.email}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value })
+                    setEmailError("") // Clear error on change
+                  }}
+                  onBlur={(e) => checkEmailAvailability(e.target.value)}
+                  className={`bg-white/5 border-white/20 focus:border-[#FF0059] focus:ring-[#FF0059]/30 rounded-xl h-14 font-medium transition-all duration-300 hover:border-white/30 ${
+                    emailError ? "border-red-500/50" : ""
+                  }`}
+                  required
+                />
+                {isCheckingEmail && (
+                  <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#FF0059]"></div>
+                  </div>
+                )}
+              </div>
+              {emailError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-2 text-red-400 text-sm font-medium"
+                >
+                  <AlertCircle className="h-4 w-4" />
+                  {emailError}
+                </motion.div>
+              )}
             </div>
 
             <div className="space-y-3">

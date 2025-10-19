@@ -12,6 +12,7 @@ import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import { PublicRoute } from "@/components/auth/public-route"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -30,18 +31,54 @@ export default function LoginPage() {
     
     // Validate form
     if (!formData.email || !formData.password) {
-      setError("Please fill in all fields")
+      const errorMsg = "Please fill in all fields"
+      setError(errorMsg)
+      toast.error("Missing Information", {
+        description: errorMsg,
+      })
       return
     }
+
+    // Show loading toast
+    const loadingToast = toast.loading("Signing you in...")
 
     // Call login function
     const result = await login(formData.email, formData.password)
     
+    // Dismiss loading toast
+    toast.dismiss(loadingToast)
+    
     if (result.success) {
+      // Show success toast
+      toast.success("Login Successful!", {
+        description: "Welcome back! Redirecting to your matches...",
+      })
       // Redirect to matches page on success
-      router.push("/matches")
+      setTimeout(() => {
+        router.push("/matches")
+      }, 1000)
     } else {
-      setError(result.error || "Login failed. Please try again.")
+      const errorMsg = result.error || "Login failed. Please try again."
+      setError(errorMsg)
+      
+      // Show specific error toasts based on error message
+      if (errorMsg.toLowerCase().includes("credentials") || errorMsg.toLowerCase().includes("invalid")) {
+        toast.error("Invalid Credentials", {
+          description: "The email or password you entered is incorrect. Please try again.",
+        })
+      } else if (errorMsg.toLowerCase().includes("network")) {
+        toast.error("Connection Error", {
+          description: "Unable to connect to the server. Please check your internet connection and try again.",
+        })
+      } else if (errorMsg.toLowerCase().includes("not found")) {
+        toast.error("Account Not Found", {
+          description: "No account found with this email. Please sign up first.",
+        })
+      } else {
+        toast.error("Login Failed", {
+          description: errorMsg,
+        })
+      }
     }
   }
 

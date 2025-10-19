@@ -6,6 +6,7 @@ import { Footer } from "@/components/footer"
 import { AuthProvider } from "@/contexts/auth-context"
 import { RecommendationsProvider } from "@/contexts/recommendations-context"
 import { UserDataProvider } from "@/contexts/user-data-context"
+import { Toaster } from "@/components/ui/toast"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -35,6 +36,7 @@ export default function RootLayout({
             <RecommendationsProvider>
               {children}
               <Footer />
+              <Toaster />
             </RecommendationsProvider>
           </UserDataProvider>
         </AuthProvider>
