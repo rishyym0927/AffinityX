@@ -6,15 +6,14 @@ import { UserCard } from "@/components/dashboard/user-card"
 import { ActivityFeed } from "@/components/dashboard/activity-feed"
 import { QuickStats } from "@/components/dashboard/quick-stats"
 import { ProtectedRoute } from "@/components/auth/protected-route"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Heart, X, Sparkles, TrendingUp, Users, MessageCircle, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
-import { recentMatches } from "@/data/user"
 import { useRecommendations, type RecommendedUser } from "@/hooks/use-recommendations"
 import { RecommendationFiltersComponent } from "@/components/dashboard/recommendation-filters"
-import { useEffect } from "react"
 import { api } from "@/lib/api"
+import { useRouter } from "next/navigation"
 
 
 
@@ -78,12 +77,25 @@ const PROGRESS_MESSAGES = [
 
 
 
+interface RecentMatch {
+  match_id: number
+  user_id: number
+  name: string
+  image: string
+  matched_at: string
+  last_message?: string
+  last_message_at?: string
+}
+
 export default function DashboardPage() {
   const [currentUserIndex, setCurrentUserIndex] = useState(0)
   const [likedUsers, setLikedUsers] = useState<number[]>([])
   const [rejectedUsers, setRejectedUsers] = useState<number[]>([])
   const [isAnimating, setIsAnimating] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [recentMatches, setRecentMatches] = useState<RecentMatch[]>([])
+  const [loadingMatches, setLoadingMatches] = useState(false)
+  const router = useRouter()
 
   // Use recommendations context
   const {
@@ -107,7 +119,7 @@ export default function DashboardPage() {
 
   // Convert RecommendedUser to the format expected by UserCard
   const convertToUserCardFormat = (user: RecommendedUser) => ({
-    id: user.ID,
+  id: user.ID.toString(),
     name: user.Name,
     age: user.Age,
     location: user.City,
@@ -166,6 +178,42 @@ export default function DashboardPage() {
       setIsAnimating(false)
     }, 300)
   }
+
+  // Fetch recent matches for right sidebar
+  useEffect(() => {
+    let mounted = true
+    const fetchRecent = async () => {
+      setLoadingMatches(true)
+      try {
+        const { data, error } = await api.getRecentMatches()
+        if (error) {
+          console.error('failed to fetch recent matches', error)
+        } else if (data?.matches && mounted) {
+          // Map to local RecentMatch shape
+          const mapped = data.matches.map((m: any) => ({
+            match_id: m.match_id,
+            user_id: m.user_id,
+            name: m.name,
+            image: m.image || '/default.jpg',
+            matched_at: m.matched_at || m.matchedAt || '',
+            last_message: m.last_message || '',
+            last_message_at: m.last_message_at || m.lastMessageAt || '',
+          }))
+          setRecentMatches(mapped)
+        }
+      } catch (e) {
+        console.error('error fetching recent matches', e)
+      } finally {
+        if (mounted) setLoadingMatches(false)
+      }
+    }
+
+    fetchRecent()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
 
 
@@ -350,25 +398,32 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-3">
-                  {recentMatches.map((match, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center space-x-3 p-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
-                    >
-                      <Image
-                        width={40}
-                        height={40}
-                        src={match.image || "/default.jpg"}
-                        alt={match.name}
-                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-white text-sm truncate">{match.name}</div>
-                        <div className="text-white/60 text-xs">{match.time}</div>
+                  {loadingMatches ? (
+                    <div className="py-6 text-center text-white/60">Loading matches...</div>
+                  ) : recentMatches.length === 0 ? (
+                    <div className="py-6 text-center text-white/60">No recent matches yet</div>
+                  ) : (
+                    recentMatches.map((match, index) => (
+                      <div
+                        key={match.match_id}
+                        onClick={() => router.push(`/user/${match.user_id}`)}
+                        className="flex items-center space-x-3 p-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
+                      >
+                        <Image
+                          width={40}
+                          height={40}
+                          src={match.image || "/default.jpg"}
+                          alt={match.name}
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-white text-sm truncate">{match.name}</div>
+                          <div className="text-white/60 text-xs">{match.last_message_at || match.matched_at || 'Recently'}</div>
+                        </div>
+                        <MessageCircle className="h-4 w-4 text-[#FF0059] flex-shrink-0" />
                       </div>
-                      <MessageCircle className="h-4 w-4 text-[#FF0059] flex-shrink-0" />
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
 
                 <Button

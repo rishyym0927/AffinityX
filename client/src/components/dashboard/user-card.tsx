@@ -4,7 +4,7 @@ import { useState } from "react"
 import Image from "next/image"
 
 interface User {
-  id: number
+  id: string
   name: string
   age: number
   location: string

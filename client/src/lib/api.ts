@@ -116,6 +116,12 @@ export const api = {
       body: JSON.stringify({ sender_id: senderId, accept }),
     }),
 
+  getIncomingRequests: () =>
+    apiRequest('/api/match/incoming-requests'),
+
+  getRecentMatches: () =>
+    apiRequest('/api/match/recent'),
+
   // Chat
   sendMessage: (matchId: number, message: string) =>
     apiRequest('/api/chat/send', {

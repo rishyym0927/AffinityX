@@ -7,7 +7,7 @@ import { useState } from "react"
 import { api } from "@/lib/api"
 
 interface User {
-  id: number
+  id: string
   name: string
 }
 
@@ -23,7 +23,7 @@ export function UserProfileActions({ user }: UserProfileActionsProps) {
     setIsLiked(true)
     try {
       // Send match request to backend API
-      const response = await api.sendMatchRequest(user.id)
+  const response = await api.sendMatchRequest(parseInt(user.id))
       if (response.error) {
         console.error('Failed to send match request:', response.error)
       } else {
@@ -36,9 +36,9 @@ export function UserProfileActions({ user }: UserProfileActionsProps) {
   }
 
   const handleReject = () => {
-    setIsRejected(true)
-    // Hardcoded reject - no backend API call needed
-    console.log(`Rejected user ${user.id} (${user.name})`)
+  setIsRejected(true)
+  // Hardcoded reject - no backend API call needed
+  console.log(`Rejected user ${user.id} (${user.name})`)
   }
 
   const handleMessage = () => {
