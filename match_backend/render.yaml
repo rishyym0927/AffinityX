@@ -20,5 +20,5 @@ services:
       - key: CLOUDINARY_API_SECRET
         sync: false
       - key: ALLOWED_ORIGINS
-        value: https://your-frontend.vercel.app,http://localhost:3000
+        value: https://affinity-x-o1wv-fv4zyybjs-rishiraj-mukherjees-projects.vercel.app,https://affinity-x.vercel.app,http://localhost:3000
     healthCheckPath: /api/health
