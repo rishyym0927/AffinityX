@@ -43,6 +43,7 @@ func (s *Server) setupPublicRoutes(r *chi.Mux) {
 	r.Get("/api/health", s.health)
 	r.Post("/api/auth/signup", s.signup)
 	r.Post("/api/auth/login", s.login)
+	r.Post("/api/auth/check-email", s.checkEmail)
 }
 
 // setupProtectedRoutes configures protected routes

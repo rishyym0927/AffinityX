@@ -84,3 +84,27 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		"user_id": user.ID,
 	}, http.StatusOK)
 }
+
+// checkEmail checks if an email already exists
+func (s *Server) checkEmail(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.errorJSON(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.Email == "" {
+		s.errorJSON(w, "email is required", http.StatusBadRequest)
+		return
+	}
+
+	// Check if user exists
+	_, err := s.repo.GetUserByEmail(r.Context(), req.Email)
+	exists := err == nil
+
+	s.responseJSON(w, map[string]bool{
+		"exists": exists,
+	}, http.StatusOK)
+}
