@@ -49,6 +49,38 @@ func (p *Postgres) GetUserImages(ctx context.Context, userID int64) ([]UserImage
 	return images, rows.Err()
 }
 
+// GetUserImageURLs returns just the image URLs for a user
+func (p *Postgres) GetUserImageURLs(ctx context.Context, userID int64) ([]string, error) {
+	rows, err := p.Pool.Query(ctx,
+		`SELECT COALESCE(public_url, '') 
+		 FROM user_images 
+		 WHERE user_id=$1 
+		 ORDER BY is_primary DESC, uploaded_at DESC;`,
+		userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var urls []string
+	for rows.Next() {
+		var url string
+		if err := rows.Scan(&url); err != nil {
+			return nil, err
+		}
+		if url != "" {
+			urls = append(urls, url)
+		}
+	}
+
+	// If no images, return default
+	if len(urls) == 0 {
+		urls = []string{"/default.jpg"}
+	}
+
+	return urls, rows.Err()
+}
+
 func (p *Postgres) DeleteUserImage(ctx context.Context, imageID, userID int64) error {
 	_, err := p.Pool.Exec(ctx, `DELETE FROM user_images WHERE id=$1 AND user_id=$2;`, imageID, userID)
 	return err

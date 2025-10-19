@@ -13,9 +13,8 @@ type UserRepo interface {
 	FetchCandidates(ctx context.Context, prefs MatchPrefs) ([]User, int64, error)
 	SendMatchRequest(ctx context.Context, senderID, receiverID int64) error
 	RespondMatchRequest(ctx context.Context, senderID, receiverID int64, accept bool) error
+	GetUserImageURLs(ctx context.Context, userID int64) ([]string, error)
 }
-
-
 
 // Matcher orchestrates recommendation generation
 type Matcher struct {
@@ -60,15 +59,33 @@ func (m *Matcher) Recommend(ctx context.Context, viewerID int64, prefs MatchPref
 			defer wg.Done()
 			sem <- struct{}{}
 			s, reasons := RuleScore(viewer, c, 0) // geo=0 for now
+
+			// Fetch user images
+			images, err := m.repo.GetUserImageURLs(ctx, c.ID)
+			if err == nil && len(images) > 0 {
+				c.Images = images
+			}
+
+			// Convert score to percentage (0-100)
+			matchScore := int(s * 100 / 75) // Max score is 75, normalize to 100
+			if matchScore > 100 {
+				matchScore = 100
+			}
+
 			<-sem
 			mu.Lock()
-			results = append(results, Candidate{User: c, Score: s, Reasons: reasons})
+			results = append(results, Candidate{
+				User:       c,
+				Score:      s,
+				Reasons:    reasons,
+				MatchScore: matchScore,
+			})
 			mu.Unlock()
 		}()
 	}
 	wg.Wait()
 
-	// Sort by score
+	// Sort by score (DESC) - best matches first
 	sort.Slice(results, func(i, j int) bool {
 		return results[i].Score > results[j].Score
 	})
@@ -80,5 +97,3 @@ func (m *Matcher) Recommend(ctx context.Context, viewerID int64, prefs MatchPref
 
 	return Recommendation{Candidates: results, NextCursor: nextCursor}, nil
 }
-
-

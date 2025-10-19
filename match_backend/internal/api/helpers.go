@@ -53,6 +53,7 @@ func (s *Server) parseMatchPreferences(r *http.Request) core.MatchPrefs {
 	ageMin, _ := strconv.Atoi(r.URL.Query().Get("age_min"))
 	ageMax, _ := strconv.Atoi(r.URL.Query().Get("age_max"))
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	minScoreStr := r.URL.Query().Get("min_score")
 
 	// Apply default/max limits
 	if limit <= 0 || limit > maxLimit {
@@ -64,12 +65,20 @@ func (s *Server) parseMatchPreferences(r *http.Request) core.MatchPrefs {
 		targetGender = []rune(gender)[0]
 	}
 
+	// Only apply min_score filter if explicitly specified
+	minScore := 0 // Default to 0 to show all profiles
+	if minScoreStr != "" {
+		if parsed, err := strconv.Atoi(minScoreStr); err == nil && parsed >= 0 && parsed <= 100 {
+			minScore = parsed
+		}
+	}
+
 	return core.MatchPrefs{
 		TargetGender: targetGender,
 		AgeMin:       ageMin,
 		AgeMax:       ageMax,
 		Limit:        limit,
-		MinScore:     defaultMinScore,
+		MinScore:     minScore,
 	}
 }
 

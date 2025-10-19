@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rishyym0927/match_backend/internal/core"
 )
@@ -30,11 +31,24 @@ func (p *Postgres) FetchExclusions(ctx context.Context, viewer int64) (map[int64
 	return exclusions, rows.Err()
 }
 
+// AddExclusion adds a user to the exclusion list
+func (p *Postgres) AddExclusion(ctx context.Context, userID, targetID int64, reason string) error {
+	query := `
+		INSERT INTO user_exclusions (user_id, target_id, reason)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id, target_id) 
+		DO UPDATE SET reason = EXCLUDED.reason, created_at = NOW()
+	`
+	_, err := p.Pool.Exec(ctx, query, userID, targetID, reason)
+	return err
+}
+
 // FetchCandidates retrieves potential matches based on preferences
 func (p *Postgres) FetchCandidates(ctx context.Context, prefs core.MatchPrefs) ([]core.User, int64, error) {
 	var users []core.User
 	var nextCursor int64
 
+	// Build dynamic query based on provided filters
 	query := `
 		SELECT 
 			u.user_id AS id,
@@ -51,22 +65,50 @@ func (p *Postgres) FetchCandidates(ctx context.Context, prefs core.MatchPrefs) (
 			COALESCE(s.confidence, 0) AS confidence
 		FROM users u
 		LEFT JOIN scores s ON u.user_id = s.user_id
-		WHERE u.gender = $1
-		  AND u.age BETWEEN $2 AND $3
-		  AND COALESCE(s.total_score, 0) >= $4
-		  AND u.user_id > $5
-		ORDER BY u.user_id
-		LIMIT $6
+		WHERE 1=1
 	`
 
-	rows, err := p.Pool.Query(ctx, query,
-		string(prefs.TargetGender),
-		prefs.AgeMin,
-		prefs.AgeMax,
-		prefs.MinScore,
-		prefs.CursorID,
-		prefs.Limit+1, // +1 to detect next cursor
-	)
+	args := []interface{}{}
+	argIndex := 1
+
+	// Add gender filter if specified
+	if prefs.TargetGender != 0 {
+		query += ` AND u.gender = $` + fmt.Sprintf("%d", argIndex)
+		args = append(args, string(prefs.TargetGender))
+		argIndex++
+	}
+
+	// Add age filters if specified
+	if prefs.AgeMin > 0 {
+		query += ` AND u.age >= $` + fmt.Sprintf("%d", argIndex)
+		args = append(args, prefs.AgeMin)
+		argIndex++
+	}
+	if prefs.AgeMax > 0 {
+		query += ` AND u.age <= $` + fmt.Sprintf("%d", argIndex)
+		args = append(args, prefs.AgeMax)
+		argIndex++
+	}
+
+	// Add min_score filter if specified
+	if prefs.MinScore > 0 {
+		query += ` AND COALESCE(s.total_score, 0) >= $` + fmt.Sprintf("%d", argIndex)
+		args = append(args, prefs.MinScore)
+		argIndex++
+	}
+
+	// Add cursor for pagination
+	if prefs.CursorID > 0 {
+		query += ` AND u.user_id > $` + fmt.Sprintf("%d", argIndex)
+		args = append(args, prefs.CursorID)
+		argIndex++
+	}
+
+	// Order and limit
+	query += ` ORDER BY u.user_id LIMIT $` + fmt.Sprintf("%d", argIndex)
+	args = append(args, prefs.Limit+1) // +1 to detect next cursor
+
+	rows, err := p.Pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}

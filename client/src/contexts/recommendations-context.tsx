@@ -6,22 +6,31 @@ import { api } from '@/lib/api'
 
 // Types - Updated to match backend response format
 export interface RecommendedUser {
-  ID: number
-  Name: string
-  Age: number
-  City: string
-  Gender: 'M' | 'F'
-  Lat: number
-  Lon: number
-  TotalScore: number
-  Personality: number
-  Communication: number
-  Emotional: number
-  Confidence: number
+  id: number
+  name: string
+  age: number
+  city: string
+  gender: 'M' | 'F'
+  lat?: number
+  lon?: number
+  total_score?: number
+  personality?: number
+  communication?: number
+  emotional?: number
+  confidence?: number
+  images?: string[]
+}
+
+export interface Candidate {
+  user: RecommendedUser
+  score: number
+  reasons: string[]
+  match_score: number
 }
 
 export interface RecommendationsResponse {
-  candidates: RecommendedUser[]
+  candidates: Candidate[]
+  next_cursor?: number
 }
 
 export interface RecommendationFilters {
@@ -29,10 +38,11 @@ export interface RecommendationFilters {
   age_min?: number
   age_max?: number
   limit?: number
+  min_score?: number
 }
 
 export interface RecommendationsState {
-  recommendations: RecommendedUser[]
+  recommendations: Candidate[]
   isLoading: boolean
   error: string | null
   hasMore: boolean
@@ -45,6 +55,7 @@ export interface RecommendationsContextType extends RecommendationsState {
   updateFilters: (filters: RecommendationFilters) => void
   clearError: () => void
   removeRecommendation: (userId: number) => void
+  rejectUser: (userId: number) => Promise<void>
 }
 
 // Create context
@@ -70,13 +81,22 @@ const DEFAULT_FILTERS: RecommendationFilters = {
 }
 
 export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = ({ children }) => {
-  const [recommendations, setRecommendations] = useState<RecommendedUser[]>([])
+  const [recommendations, setRecommendations] = useState<Candidate[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [currentFilters, setCurrentFilters] = useState<RecommendationFilters>(DEFAULT_FILTERS)
+  const [hasInitialized, setHasInitialized] = useState(false)
+  const [isFetching, setIsFetching] = useState(false)
   
   const { isAuthenticated, user } = useAuth()
+
+  // Helper to dedupe candidates by user id
+  const dedupe = (existing: Candidate[], incoming: Candidate[]) => {
+    const seen = new Set(existing.map((c) => c.user.id))
+    const unique = incoming.filter((c) => !seen.has(c.user.id))
+    return [...existing, ...unique]
+  }
 
   // Fetch recommendations function
   const fetchRecommendations = useCallback(async (
@@ -88,11 +108,18 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
       return
     }
 
+    // Prevent concurrent fetches
+    if (isFetching) {
+      console.log('Already fetching, skipping duplicate request')
+      return
+    }
+
     try {
+      setIsFetching(true)
       setIsLoading(true)
       setError(null)
       
-      const response = await api.getRecommendations(filters)
+      const response = await api.getRecommendations(filters) as any
       console.log('Fetched recommendations:', response)
       
       if (response.error) {
@@ -100,25 +127,30 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
       }
 
       if (response.data) {
-        const newRecommendations = response.data.candidates || []
+        const newCandidates: Candidate[] = response.data.candidates || []
         
         if (append) {
-          setRecommendations(prev => {
-            // Remove duplicates based on ID
-            const existingIds = new Set(prev.map(user => user.ID))
-            const uniqueNew = newRecommendations.filter((user: RecommendedUser) => !existingIds.has(user.ID))
-            return [...prev, ...uniqueNew]
-          })
+          setRecommendations(prev => dedupe(prev, newCandidates))
         } else {
-          setRecommendations(newRecommendations)
+          setRecommendations(newCandidates)
         }
         
         // Update hasMore based on the number of results returned
         const limit = filters.limit || DEFAULT_FILTERS.limit || 10
-        setHasMore(newRecommendations.length >= limit)
+        // If we got fewer results than requested, there are no more profiles
+        setHasMore(newCandidates.length >= limit)
         
-        // Update current filters
+        // Update current filters only on successful fetch
         setCurrentFilters(filters)
+        
+        // Clear any previous errors on success
+        setError(null)
+      } else {
+        // Handle empty response
+        if (!append) {
+          setRecommendations([])
+        }
+        setHasMore(false)
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch recommendations'
@@ -131,8 +163,9 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
       }
     } finally {
       setIsLoading(false)
+      setIsFetching(false)
     }
-  }, [isAuthenticated, currentFilters])
+  }, [isAuthenticated])
 
   // Refresh recommendations with current filters
   const refreshRecommendations = useCallback(async (): Promise<void> => {
@@ -143,6 +176,7 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
   const updateFilters = useCallback((newFilters: RecommendationFilters) => {
     const mergedFilters = { ...currentFilters, ...newFilters }
     setCurrentFilters(mergedFilters)
+    setHasInitialized(true) // Mark as user-initiated
     fetchRecommendations(mergedFilters, false)
   }, [currentFilters, fetchRecommendations])
 
@@ -153,19 +187,35 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
 
   // Remove a recommendation (useful when user interacts with a recommendation)
   const removeRecommendation = useCallback((userId: number) => {
-    setRecommendations(prev => prev.filter(user => user.ID !== userId))
+    setRecommendations(prev => {
+      const filtered = prev.filter(c => c.user.id !== userId)
+      // If we've removed profiles and are running low, mark hasMore as uncertain
+      // The dashboard will trigger a refetch if needed
+      if (filtered.length === 0) {
+        setHasMore(false)
+      }
+      return filtered
+    })
   }, [])
 
-  // Auto-fetch recommendations when user becomes authenticated
-  useEffect(() => {
-    if (isAuthenticated && recommendations.length === 0 && !isLoading) {
-      fetchRecommendations()
+  // Reject a user (swipe left) and notify backend
+  const rejectUser = useCallback(async (userId: number) => {
+    try {
+      const { error } = await api.rejectUser(userId)
+      if (error) {
+        console.warn('Failed to notify backend of rejection:', error)
+      }
+    } catch (e) {
+      console.warn('Error calling reject API', e)
+    } finally {
+      // Always remove locally so user experience is immediate
+      removeRecommendation(userId)
     }
-  }, [isAuthenticated, recommendations.length, isLoading, fetchRecommendations])
+  }, [removeRecommendation])
 
-  // Set default filters based on user preferences
+  // Set default filters based on user preferences (only once)
   useEffect(() => {
-    if (user && isAuthenticated) {
+    if (user && isAuthenticated && !hasInitialized) {
       const userBasedFilters: RecommendationFilters = {
         ...DEFAULT_FILTERS,
         // Set opposite gender by default
@@ -176,8 +226,16 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
       }
       
       setCurrentFilters(userBasedFilters)
+      setHasInitialized(true)
     }
-  }, [user, isAuthenticated])
+  }, [user, isAuthenticated, hasInitialized])
+
+  // Auto-fetch recommendations when user becomes authenticated (only once)
+  useEffect(() => {
+    if (isAuthenticated && hasInitialized && recommendations.length === 0 && !isLoading && !isFetching && hasMore) {
+      fetchRecommendations()
+    }
+  }, [isAuthenticated, hasInitialized, recommendations.length, isLoading, isFetching, hasMore, fetchRecommendations])
 
   const value: RecommendationsContextType = {
     // State
@@ -192,6 +250,7 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
     updateFilters,
     clearError,
     removeRecommendation,
+    rejectUser,
   }
 
   return (

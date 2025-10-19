@@ -66,6 +66,7 @@ func (s *Server) setupProtectedRoutes(r *chi.Mux) {
 		pr.Get("/api/match/incoming-requests", s.getIncomingRequests)
 		pr.Get("/api/match/recent", s.getRecentMatches)
 		pr.Post("/api/match/request", s.matchRequest)
+		pr.Post("/api/match/reject", s.matchReject)
 		pr.Post("/api/match/respond", s.matchRespond)
 
 		// Chat routes

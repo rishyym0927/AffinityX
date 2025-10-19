@@ -12,15 +12,24 @@ import { Settings, Filter, X } from 'lucide-react'
 interface RecommendationFiltersProps {
   isOpen: boolean
   onClose: () => void
+  onFiltersApplied?: () => void // Callback when filters are applied
 }
 
-export function RecommendationFiltersComponent({ isOpen, onClose }: RecommendationFiltersProps) {
+export function RecommendationFiltersComponent({ isOpen, onClose, onFiltersApplied }: RecommendationFiltersProps) {
   const { currentFilters, updateFilters, isLoading } = useRecommendations()
   
   const [localFilters, setLocalFilters] = useState<RecommendationFilters>(currentFilters)
 
+  // Sync local filters with context when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setLocalFilters(currentFilters)
+    }
+  }, [isOpen, currentFilters])
+
   const handleApplyFilters = () => {
     updateFilters(localFilters)
+    onFiltersApplied?.() // Notify parent component
     onClose()
   }
 
@@ -30,6 +39,7 @@ export function RecommendationFiltersComponent({ isOpen, onClose }: Recommendati
     }
     setLocalFilters(defaultFilters)
     updateFilters(defaultFilters)
+    onFiltersApplied?.() // Notify parent component
     onClose()
   }
 
@@ -152,6 +162,30 @@ export function RecommendationFiltersComponent({ isOpen, onClose }: Recommendati
                 <SelectItem value="50">50 profiles</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Minimum Match Score */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-white/80">
+              Minimum Match Score (Optional)
+            </Label>
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              value={localFilters.min_score !== undefined ? localFilters.min_score : ''}
+              onChange={(e) => 
+                setLocalFilters(prev => ({ 
+                  ...prev, 
+                  min_score: e.target.value ? parseFloat(e.target.value) : undefined 
+                }))
+              }
+              className="bg-white/5 border-white/20 focus:border-[#FF0059] rounded-xl"
+              placeholder="e.g., 50"
+            />
+            <p className="text-xs text-white/50">
+              Show only profiles with at least this match percentage
+            </p>
           </div>
         </div>
 

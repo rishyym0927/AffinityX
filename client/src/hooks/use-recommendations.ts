@@ -5,3 +5,5 @@ export type {
   RecommendationsState, 
   RecommendationsContextType 
 } from '@/contexts/recommendations-context'
+
+export type { Candidate } from '@/contexts/recommendations-context'

@@ -10,7 +10,7 @@ import { useState, useEffect } from "react"
 import { Heart, X, Sparkles, TrendingUp, Users, MessageCircle, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
-import { useRecommendations, type RecommendedUser } from "@/hooks/use-recommendations"
+import { useRecommendations, type Candidate } from "@/hooks/use-recommendations"
 import { RecommendationFiltersComponent } from "@/components/dashboard/recommendation-filters"
 import { api } from "@/lib/api"
 import { useRouter } from "next/navigation"
@@ -104,44 +104,65 @@ export default function DashboardPage() {
     error,
     fetchRecommendations,
     removeRecommendation,
-    refreshRecommendations
+    refreshRecommendations,
+    rejectUser,
+    updateFilters,
   } = useRecommendations()
 
   const currentUser = recommendations[currentUserIndex]
   const remainingUsers = recommendations.length - currentUserIndex
 
-  // Auto-refresh recommendations when they run low
+  // Reset index when recommendations change completely (e.g., new filters applied)
   useEffect(() => {
-    if (recommendations.length - currentUserIndex <= 2 && remainingUsers > 0) {
-      fetchRecommendations(undefined, true) // Append more recommendations
+    const prevLength = recommendations.length
+    if (currentUserIndex >= recommendations.length && recommendations.length > 0) {
+      setCurrentUserIndex(0)
     }
-  }, [currentUserIndex, recommendations.length, remainingUsers, fetchRecommendations])
+  }, [recommendations.length, currentUserIndex])
 
-  // Convert RecommendedUser to the format expected by UserCard
-  const convertToUserCardFormat = (user: RecommendedUser) => ({
-  id: user.ID.toString(),
-    name: user.Name,
-    age: user.Age,
-    location: user.City,
-    bio: `Lives in ${user.City}. Looking for meaningful connections and great conversations.`,
-    interests: ["Travel", "Music", "Coffee", "Movies", "Reading"], // Default interests
-    profileImage: "/default.jpg",
-    images: ["/default.jpg"], // Default image since not provided by API
-    compatibility: user.TotalScore,
-    isOnline: Math.random() > 0.5, // Random online status
-    lastSeen: "2 hours ago", // Default last seen
-    occupation: "Professional", // Default occupation
-  })
+  // Auto-refresh recommendations when they run low (with debounce)
+  useEffect(() => {
+    // Only fetch more if we have less than 3 profiles remaining and there might be more
+    if (recommendations.length > 0 && 
+        recommendations.length - currentUserIndex <= 2 && 
+        recommendations.length - currentUserIndex > 0 &&
+        !isLoading) {
+      const timer = setTimeout(() => {
+        fetchRecommendations(undefined, true) // Append more recommendations
+      }, 500) // Debounce to prevent multiple calls
+      
+      return () => clearTimeout(timer)
+    }
+  }, [currentUserIndex, recommendations.length, fetchRecommendations, isLoading])
+
+  // Convert Candidate -> UserCard format
+  const convertToUserCardFormat = (candidate: Candidate) => {
+    const user = candidate.user
+    return {
+      id: String(user.id),
+      name: user.name,
+      age: user.age,
+      location: user.city,
+      bio: `Lives in ${user.city}. Looking for meaningful connections and great conversations.`,
+      interests: ["Travel", "Music", "Coffee", "Movies", "Reading"],
+      profileImage: (user.images && user.images[0]) || "/default.jpg",
+      images: user.images && user.images.length ? user.images : ["/default.jpg"],
+      compatibility: candidate.match_score || Math.round(candidate.score * 100),
+      isOnline: Math.random() > 0.5,
+      lastSeen: "2 hours ago",
+      occupation: "Professional",
+    }
+  }
 
   const handleLike = async () => {
     if (isAnimating || !currentUser) return
 
     setIsAnimating(true)
-    setLikedUsers((prev) => [...prev, currentUser.ID])
+  setLikedUsers((prev) => [...prev, currentUser.user.id])
 
     try {
       // Send match request to backend API
-      const response = await api.sendMatchRequest(currentUser.ID)
+  const response = await api.sendMatchRequest(currentUser.user.id)
       if (response.error) {
         console.error('Failed to send match request:', response.error)
         // You might want to show a toast notification here
@@ -152,29 +173,26 @@ export default function DashboardPage() {
       console.error('Error sending match request:', error)
     }
 
-    // Remove from recommendations
-    removeRecommendation(currentUser.ID)
+  // Remove from recommendations (don't increment index since removal shifts array)
+  removeRecommendation(currentUser.user.id)
 
     setTimeout(() => {
-      setCurrentUserIndex((prev) => prev + 1)
+      // No need to increment index - the array shifts when item is removed
       setIsAnimating(false)
     }, 300)
   }
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (isAnimating || !currentUser) return
 
     setIsAnimating(true)
-    setRejectedUsers((prev) => [...prev, currentUser.ID])
+    setRejectedUsers((prev) => [...prev, currentUser.user.id])
 
-    // Hardcoded reject - no backend API call needed
-    console.log(`Rejected user ${currentUser.ID} (${currentUser.Name})`)
-
-    // Remove from recommendations
-    removeRecommendation(currentUser.ID)
+    // Notify backend and remove locally (don't increment index since removal shifts array)
+    await rejectUser(currentUser.user.id)
 
     setTimeout(() => {
-      setCurrentUserIndex((prev) => prev + 1)
+      // No need to increment index - the array shifts when item is removed
       setIsAnimating(false)
     }, 300)
   }
@@ -272,9 +290,9 @@ export default function DashboardPage() {
                 ) : currentUser ? (
                   <div className="relative">
                     {/* Background cards for depth */}
-                    {recommendations.slice(currentUserIndex + 1, currentUserIndex + 3).map((user: RecommendedUser, index: number) => (
+                    {recommendations.slice(currentUserIndex + 1, currentUserIndex + 3).map((c: Candidate, index: number) => (
                       <div
-                        key={user.ID}
+                        key={c.user.id}
                         className="absolute inset-0 bg-white/5 rounded-3xl border border-white/10"
                         style={{
                           transform: `scale(${0.95 - index * 0.05}) translateY(${(index + 1) * 8}px)`,
@@ -287,14 +305,14 @@ export default function DashboardPage() {
                     {/* Current user card */}
                     <AnimatePresence mode="wait">
                       <motion.div
-                        key={currentUser.ID}
+                        key={currentUser.user.id}
                         initial={{ opacity: 0, scale: 0.8, rotateY: -90 }}
                         animate={{ opacity: 1, scale: 1, rotateY: 0 }}
                         exit={{
                           opacity: 0,
                           scale: 0.8,
-                          x: isAnimating ? (likedUsers.includes(currentUser.ID) ? 300 : -300) : 0,
-                          rotateZ: isAnimating ? (likedUsers.includes(currentUser.ID) ? 15 : -15) : 0,
+                          x: isAnimating ? (likedUsers.includes(currentUser.user.id) ? 300 : -300) : 0,
+                          rotateZ: isAnimating ? (likedUsers.includes(currentUser.user.id) ? 15 : -15) : 0,
                         }}
                         transition={{ duration: 0.3, ease: "easeOut" }}
                         className="relative z-10"
@@ -496,7 +514,10 @@ export default function DashboardPage() {
       {/* Recommendation Filters Modal */}
       <RecommendationFiltersComponent 
         isOpen={showFilters} 
-        onClose={() => setShowFilters(false)} 
+        onClose={() => setShowFilters(false)}
+        onFiltersApplied={() => {
+          setCurrentUserIndex(0) // Reset to first card when filters change
+        }}
       />
     </div>
     </ProtectedRoute>

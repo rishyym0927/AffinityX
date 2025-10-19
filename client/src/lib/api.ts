@@ -97,18 +97,25 @@ export const api = {
     }),
 
   // Matching
-  getRecommendations: (params: { gender?: string; age_min?: number; age_max?: number; limit?: number }) => {
+  getRecommendations: (params: { gender?: string; age_min?: number; age_max?: number; limit?: number; min_score?: number }) => {
     const queryParams = new URLSearchParams()
     if (params.gender) queryParams.set('gender', params.gender)
     if (params.age_min) queryParams.set('age_min', params.age_min.toString())
     if (params.age_max) queryParams.set('age_max', params.age_max.toString())
     if (params.limit) queryParams.set('limit', params.limit.toString())
+    if (params.min_score !== undefined) queryParams.set('min_score', params.min_score.toString())
     
     return apiRequest(`/api/match/recommendations?${queryParams.toString()}`)
   },
 
   sendMatchRequest: (receiverId: number) =>
     apiRequest('/api/match/request', {
+      method: 'POST',
+      body: JSON.stringify({ receiver_id: receiverId }),
+    }),
+
+  rejectUser: (receiverId: number) =>
+    apiRequest('/api/match/reject', {
       method: 'POST',
       body: JSON.stringify({ receiver_id: receiverId }),
     }),
