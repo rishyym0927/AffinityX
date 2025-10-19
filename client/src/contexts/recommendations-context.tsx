@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { api } from '@/lib/api'
 
@@ -88,6 +88,7 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
   const [currentFilters, setCurrentFilters] = useState<RecommendationFilters>(DEFAULT_FILTERS)
   const [hasInitialized, setHasInitialized] = useState(false)
   const [isFetching, setIsFetching] = useState(false)
+  const lastFetchTimeRef = useRef<number>(0)
   
   const { isAuthenticated, user } = useAuth()
 
@@ -113,6 +114,14 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
       console.log('Already fetching, skipping duplicate request')
       return
     }
+
+    // Prevent rapid successive calls (debounce at function level)
+    const now = Date.now()
+    if (now - lastFetchTimeRef.current < 1000) {
+      console.log('Fetch called too soon after previous, skipping')
+      return
+    }
+    lastFetchTimeRef.current = now
 
     try {
       setIsFetching(true)
@@ -165,7 +174,7 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
       setIsLoading(false)
       setIsFetching(false)
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, currentFilters, isFetching])
 
   // Refresh recommendations with current filters
   const refreshRecommendations = useCallback(async (): Promise<void> => {
@@ -235,7 +244,8 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
     if (isAuthenticated && hasInitialized && recommendations.length === 0 && !isLoading && !isFetching && hasMore) {
       fetchRecommendations()
     }
-  }, [isAuthenticated, hasInitialized, recommendations.length, isLoading, isFetching, hasMore, fetchRecommendations])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, hasInitialized, recommendations.length, isLoading, isFetching, hasMore])
 
   const value: RecommendationsContextType = {
     // State

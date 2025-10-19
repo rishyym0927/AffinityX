@@ -139,7 +139,8 @@ export default function DashboardPage() {
       
       return () => clearTimeout(timer)
     }
-  }, [currentUserIndex, recommendations.length, fetchRecommendations, isLoading])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUserIndex, recommendations.length, isLoading])
 
   // Convert Candidate -> UserCard format
   const convertToUserCardFormat = (candidate: Candidate) => {
