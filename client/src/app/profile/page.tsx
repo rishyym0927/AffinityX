@@ -9,72 +9,11 @@ import { ProfileInfo } from "@/components/profile/profile-info"
 import { ProfileSettings } from "@/components/profile/profile-settings"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useState, useEffect } from "react"
-import { useAuth } from "@/contexts/auth-context"
-import { api, getUserId } from "@/lib/api"
-
-// User profile interface to match actual API response
-interface UserProfile {
-  ID: number
-  Name: string
-  Age: number
-  City: string
-  Gender: string
-  Lat: number
-  Lon: number
-  Communication: number
-  Confidence: number
-  Emotional: number
-  Personality: number
-  TotalScore: number
-}
+import { useUserData } from "@/hooks/use-user-data"
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("overview")
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const { user, isLoading: authLoading } = useAuth()
-
-  // Fetch user profile data
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      // Wait for auth to finish loading
-      if (authLoading) {
-        return
-      }
-
-      try {
-        setIsLoading(true)
-        setError(null)
-        
-        const userId = getUserId()
-        if (!userId) {
-          setError("User ID not found")
-          setIsLoading(false)
-          return
-        }
-
-        const response = await api.getProfile(parseInt(userId))
-        console.log("Profile fetch response:", response)
-        
-        if (response.error) {
-          setError(response.error)
-        } else if (response.data) {
-          setUserProfile(response.data)
-        }
-      } catch (err) {
-        setError("Failed to fetch profile data")
-        console.error("Profile fetch error:", err)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    // Only fetch when auth is done loading
-    if (!authLoading) {
-      fetchUserProfile()
-    }
-  }, [authLoading])
+  const { profile, isLoading, error } = useUserData()
 
   // Listen for gallery tab open event
   useEffect(() => {
@@ -149,7 +88,7 @@ export default function ProfilePage() {
         <main className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           {/* Profile Header */}
-          <ProfileHeader userProfile={userProfile} />
+          <ProfileHeader userProfile={profile} />
 
           {/* Tab Navigation */}
           <motion.div
@@ -188,17 +127,17 @@ export default function ProfilePage() {
             {activeTab === "overview" && (
               <div className="flex flex-wrap gap-6 lg:gap-8">
                 <div className="w-full lg:w-80 xl:w-96 flex-shrink-0">
-                  <ProfileStats userProfile={userProfile} />
+                  <ProfileStats userProfile={profile} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <ProfileInfo userProfile={userProfile} />
+                  <ProfileInfo userProfile={profile} />
                 </div>
               </div>
             )}
 
             {activeTab === "gallery" && <ProfileGallery />}
 
-            {activeTab === "info" && <ProfileInfo detailed userProfile={userProfile} />}
+            {activeTab === "info" && <ProfileInfo detailed userProfile={profile} />}
 
             {activeTab === "settings" && <ProfileSettings />}
           </motion.div>

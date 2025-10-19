@@ -15,6 +15,7 @@ import { RecommendationFiltersComponent } from "@/components/dashboard/recommend
 import { api } from "@/lib/api"
 import { useRouter } from "next/navigation"
 import { useDashboardStats } from "@/hooks/use-stats"
+import { useUserData } from "@/hooks/use-user-data"
 
 
 
@@ -94,12 +95,13 @@ export default function DashboardPage() {
   const [rejectedUsers, setRejectedUsers] = useState<number[]>([])
   const [isAnimating, setIsAnimating] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
-  const [recentMatches, setRecentMatches] = useState<RecentMatch[]>([])
-  const [loadingMatches, setLoadingMatches] = useState(false)
   const router = useRouter()
 
-  // Fetch dashboard statistics
-  const { dashboardStats, isLoading: statsLoading, error: statsError } = useDashboardStats()
+  // Fetch dashboard statistics from context
+  const { dashboardStats } = useUserData()
+  
+  // Fetch matches from context
+  const { matches: recentMatches, isLoading: loadingMatches } = useUserData()
 
   // Use recommendations context
   const {
@@ -200,49 +202,6 @@ export default function DashboardPage() {
       setIsAnimating(false)
     }, 300)
   }
-
-  // Fetch recent matches for right sidebar
-  useEffect(() => {
-    let mounted = true
-    const fetchRecent = async () => {
-      // Check if auth token exists before fetching
-      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
-      if (!token) {
-        setLoadingMatches(false)
-        return
-      }
-
-      setLoadingMatches(true)
-      try {
-        const { data, error } = await api.getRecentMatches()
-        if (error) {
-          console.error('failed to fetch recent matches', error)
-        } else if (data?.matches && mounted) {
-          // Map to local RecentMatch shape
-          const mapped = data.matches.map((m: any) => ({
-            match_id: m.match_id,
-            user_id: m.user_id,
-            name: m.name,
-            image: m.image || '/default.jpg',
-            matched_at: m.matched_at || m.matchedAt || '',
-            last_message: m.last_message || '',
-            last_message_at: m.last_message_at || m.lastMessageAt || '',
-          }))
-          setRecentMatches(mapped)
-        }
-      } catch (e) {
-        console.error('error fetching recent matches', e)
-      } finally {
-        if (mounted) setLoadingMatches(false)
-      }
-    }
-
-    fetchRecent()
-
-    return () => {
-      mounted = false
-    }
-  }, [])
 
 
 

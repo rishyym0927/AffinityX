@@ -2,11 +2,11 @@
 
 import { motion } from "framer-motion"
 import { Heart, Users, TrendingUp, Clock } from "lucide-react"
-import { useRequestStats } from "@/hooks/use-stats"
+import { useUserData } from "@/hooks/use-user-data"
 
 export function RequestStats() {
-  // Fetch real request statistics
-  const { requestStats, isLoading } = useRequestStats()
+  // Fetch real request statistics from context
+  const { requestStats, isLoading } = useUserData()
 
   // Show loading state
   if (isLoading) {

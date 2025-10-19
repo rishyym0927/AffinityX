@@ -3,75 +3,19 @@
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Heart, X, MapPin, Clock, Eye, Loader2 } from "lucide-react"
-import { useState, useEffect } from "react"
-import { api, apiRequest } from "@/lib/api"
-import { useAuth } from "@/hooks/use-auth"
+import { useState } from "react"
+import { api } from "@/lib/api"
 import { useRouter } from "next/navigation"
-
-interface MatchRequest {
-  id: number
-  sender_id: number
-  name: string
-  age: number
-  location: string
-  image: string
-  bio: string
-  timestamp: string
-  compatibility: number
-  mutualFriends: number
-  interests: string[]
-}
+import { useUserData } from "@/hooks/use-user-data"
 
 export function RequestsList() {
-  const [requests, setRequests] = useState<MatchRequest[]>([])
-  const [processedRequests, setProcessedRequests] = useState<number[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [processingId, setProcessingId] = useState<number | null>(null)
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
   const router = useRouter()
+  
+  // Get data from context
+  const { matchRequests, isLoading, error, refreshMatchRequests, removeMatchRequest } = useUserData()
 
-  // Fetch match requests - wait for auth to finish loading
-  useEffect(() => {
-    // Only fetch when authenticated and auth is not loading
-    if (isAuthenticated && !authLoading) {
-      fetchRequests()
-    } else if (!isAuthenticated && !authLoading) {
-      // If not authenticated after auth loading completes, set empty state
-      setIsLoading(false)
-      setRequests([])
-    }
-  }, [isAuthenticated, authLoading])
-
-  const fetchRequests = async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
-      
-      // Fetch incoming match requests from backend
-      const response = await apiRequest('/api/match/incoming-requests')
-      console.log('Fetch requests response:', response)
-      if (response.error) {
-        throw new Error(response.error)
-      }
-
-      if (response.data && response.data.requests) {
-        setRequests(response.data.requests)
-        console.log('Loaded requests:', response.data.requests)
-      } else {
-        setRequests([])
-      }
-      
-    } catch (err) {
-      console.error('Error fetching requests:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load requests')
-      setRequests([])
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleAccept = async (request: MatchRequest) => {
+  const handleAccept = async (request: any) => {
     if (processingId) return
     
     setProcessingId(request.sender_id)
@@ -83,15 +27,15 @@ export function RequestsList() {
         throw new Error(response.error)
       }
 
-      // Success - remove from list
-      setProcessedRequests((prev) => [...prev, request.sender_id])
+      // Remove from context immediately for better UX
+      removeMatchRequest(request.sender_id)
       
       // Show success message (you can add a toast notification here)
       console.log(`Accepted match request from ${request.name}`)
       
-      // Optionally refresh the list
+      // Refresh the list to ensure sync
       setTimeout(() => {
-        fetchRequests()
+        refreshMatchRequests()
       }, 1000)
     } catch (err) {
       console.error('Error accepting request:', err)
@@ -101,7 +45,7 @@ export function RequestsList() {
     }
   }
 
-  const handleReject = async (request: MatchRequest) => {
+  const handleReject = async (request: any) => {
     if (processingId) return
     
     setProcessingId(request.sender_id)
@@ -113,14 +57,14 @@ export function RequestsList() {
         throw new Error(response.error)
       }
 
-      // Success - remove from list
-      setProcessedRequests((prev) => [...prev, request.sender_id])
+      // Remove from context immediately for better UX
+      removeMatchRequest(request.sender_id)
       
       console.log(`Rejected match request from ${request.name}`)
       
-      // Optionally refresh the list
+      // Refresh the list to ensure sync
       setTimeout(() => {
-        fetchRequests()
+        refreshMatchRequests()
       }, 1000)
     } catch (err) {
       console.error('Error rejecting request:', err)
@@ -130,7 +74,7 @@ export function RequestsList() {
     }
   }
 
-  const activeRequests = requests.filter((request) => !processedRequests.includes(request.sender_id))
+  const activeRequests = matchRequests
 
   return (
     <motion.div
@@ -159,7 +103,7 @@ export function RequestsList() {
           <p className="text-red-400 mb-4">Failed to load requests</p>
           <p className="text-white/70 text-sm mb-6">{error}</p>
           <Button
-            onClick={fetchRequests}
+            onClick={refreshMatchRequests}
             className="bg-[#FF0059] hover:bg-[#FF0059]/90 px-6 py-3 rounded-xl"
           >
             Try Again

@@ -3,71 +3,23 @@
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { MessageCircle, Heart, MoreHorizontal, MapPin, Clock, Loader2 } from "lucide-react"
-import { useState, useEffect } from "react"
-import { api } from "@/lib/api"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/hooks/use-auth"
-
-interface Match {
-  match_id: number
-  user_id: number
-  name: string
-  age: number
-  location: string
-  image: string
-  bio: string
-  matched_at: string
-  compatibility: number
-  last_message?: string
-  last_message_at?: string
-  unread_count: number
-}
+import { useUserData } from "@/hooks/use-user-data"
 
 export function MatchesList() {
   const [selectedMatch, setSelectedMatch] = useState<number | null>(null)
-  const [matches, setMatches] = useState<Match[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   
-  // Import useAuth to check authentication state
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
-
-  useEffect(() => {
-    // Only fetch when authenticated and auth is not loading
-    if (isAuthenticated && !authLoading) {
-      fetchRecentMatches()
-    } else if (!isAuthenticated && !authLoading) {
-      // If not authenticated after auth loading completes, set empty state
-      setLoading(false)
-      setMatches([])
-    }
-  }, [isAuthenticated, authLoading])
-
-  const fetchRecentMatches = async () => {
-    setLoading(true)
-    setError(null)
-    
-    const { data, error: apiError } = await api.getRecentMatches()
-    
-    if (apiError) {
-      setError(apiError)
-      setLoading(false)
-      return
-    }
-    
-    if (data?.matches) {
-      setMatches(data.matches)
-    }
-    setLoading(false)
-  }
+  // Get data from context
+  const { matches, isLoading, error, refreshMatches } = useUserData()
 
   const handleChatClick = (matchId: number) => {
     // Navigate to chat or open chat modal
     router.push(`/chat?match_id=${matchId}`)
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -93,7 +45,7 @@ export function MatchesList() {
       >
         <div className="text-center py-8">
           <p className="text-red-400 mb-4">{error}</p>
-          <Button onClick={fetchRecentMatches} className="bg-[#FF0059] hover:bg-[#FF0059]/90">
+          <Button onClick={refreshMatches} className="bg-[#FF0059] hover:bg-[#FF0059]/90">
             Try Again
           </Button>
         </div>

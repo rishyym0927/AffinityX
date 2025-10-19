@@ -5,6 +5,7 @@ import "./globals.css"
 import { Footer } from "@/components/footer"
 import { AuthProvider } from "@/contexts/auth-context"
 import { RecommendationsProvider } from "@/contexts/recommendations-context"
+import { UserDataProvider } from "@/contexts/user-data-context"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -30,10 +31,12 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={inter.className}>
         <AuthProvider>
-          <RecommendationsProvider>
-            {children}
-            <Footer />
-          </RecommendationsProvider>
+          <UserDataProvider>
+            <RecommendationsProvider>
+              {children}
+              <Footer />
+            </RecommendationsProvider>
+          </UserDataProvider>
         </AuthProvider>
       </body>
     </html>

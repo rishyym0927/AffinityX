@@ -3,53 +3,18 @@
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Plus, X, Camera, ImageIcon, Star } from "lucide-react"
-import { useState, useEffect, useRef } from "react"
+import { useState, useRef } from "react"
 import { api } from "@/lib/api"
-
-interface UserImage {
-  id: number
-  user_id: number
-  image_url: string
-  is_primary: boolean
-  uploaded_at: string
-}
+import { useUserData } from "@/hooks/use-user-data"
 
 export function ProfileGallery() {
   const [selectedImage, setSelectedImage] = useState<number | null>(null)
   const [isUploading, setIsUploading] = useState(false)
-  const [images, setImages] = useState<UserImage[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // Fetch user images on mount
-  useEffect(() => {
-    // Check if auth token exists before fetching
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
-    if (token) {
-      fetchImages()
-    } else {
-      setIsLoading(false)
-    }
-  }, [])
-
-  const fetchImages = async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
-      const response = await api.listUserImages()
-      if (response.error) {
-        setError(response.error)
-      } else if (response.data?.images) {
-        setImages(response.data.images)
-      }
-    } catch (err) {
-      setError("Failed to load images")
-      console.error("Image fetch error:", err)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  
+  // Get images from context
+  const { images, isLoading, refreshImages, removeImage: removeImageFromContext, updateImage } = useUserData()
 
   const handleImageUpload = () => {
     fileInputRef.current?.click()
@@ -73,8 +38,8 @@ export function ProfileGallery() {
       if (response.error) {
         setError(response.error)
       } else {
-        // Refresh the image list
-        await fetchImages()
+        // Refresh the image list from context
+        await refreshImages()
       }
     } catch (err) {
       setError("Failed to upload images")
@@ -93,8 +58,8 @@ export function ProfileGallery() {
       if (response.error) {
         setError(response.error)
       } else {
-        // Refresh the image list
-        await fetchImages()
+        // Refresh the image list from context
+        await refreshImages()
       }
     } catch (err) {
       setError("Failed to set primary image")
@@ -110,8 +75,10 @@ export function ProfileGallery() {
       if (response.error) {
         setError(response.error)
       } else {
-        // Refresh the image list
-        await fetchImages()
+        // Remove from context immediately for better UX
+        removeImageFromContext(imageId)
+        // Also refresh to ensure sync
+        await refreshImages()
       }
     } catch (err) {
       setError("Failed to delete image")
