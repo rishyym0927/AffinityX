@@ -29,11 +29,11 @@ func (s *Server) setupMiddleware(r *chi.Mux) {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
+		AllowedOrigins:   s.cfg.AllowedOrigins,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Requested-With"},
+		ExposedHeaders:   []string{"Link", "Content-Length"},
+		AllowCredentials: true,
 		MaxAge:           300,
 	}))
 }
@@ -72,6 +72,13 @@ func (s *Server) setupProtectedRoutes(r *chi.Mux) {
 		// Chat routes
 		pr.Post("/api/chat/send", s.chatSend)
 		pr.Get("/api/chat/{match_id}", s.chatGet)
+
+		// Statistics routes
+		pr.Get("/api/stats/activity", s.getUserStats)
+		pr.Get("/api/stats/weekly", s.getWeeklyActivity)
+		pr.Get("/api/stats/requests", s.getRequestStats)
+		pr.Get("/api/stats/analytics", s.getProfileAnalytics)
+		pr.Get("/api/stats/dashboard", s.getDashboardStats)
 	})
 }
 

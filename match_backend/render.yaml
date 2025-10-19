@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: affinityx-backend
+    env: go
+    buildCommand: go build -o server ./cmd/server
+    startCommand: ./server
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: POSTGRES_DSN
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_TTL_HOURS
+        value: 72
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: ALLOWED_ORIGINS
+        value: https://your-frontend.vercel.app,http://localhost:3000
+    healthCheckPath: /api/health
