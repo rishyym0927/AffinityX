@@ -1,20 +1,18 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Heart, Users, Zap, Eye } from "lucide-react"
+import { Heart, Users, Eye } from "lucide-react"
 
 interface QuickStatsProps {
   likes: number
   matches: number
-  superLikes: number
   views: number
 }
 
-export function QuickStats({ likes, matches, superLikes, views }: QuickStatsProps) {
+export function QuickStats({ likes, matches, views }: QuickStatsProps) {
   const stats = [
     { label: "Likes", value: likes, icon: Heart, color: "text-[#FF0059]", bg: "bg-[#FF0059]/20" },
     { label: "Matches", value: matches, icon: Users, color: "text-green-400", bg: "bg-green-400/20" },
-    { label: "Super Likes", value: superLikes, icon: Zap, color: "text-blue-400", bg: "bg-blue-400/20" },
     { label: "Profile Views", value: views, icon: Eye, color: "text-purple-400", bg: "bg-purple-400/20" },
   ]
 

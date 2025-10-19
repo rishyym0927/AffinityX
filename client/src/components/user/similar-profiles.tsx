@@ -4,6 +4,8 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Heart, Eye } from "lucide-react"
 import Link from "next/link"
+import { useState } from "react"
+import { api } from "@/lib/api"
 
 interface SimilarProfile {
   id: string
@@ -46,6 +48,23 @@ const similarProfiles: SimilarProfile[] = [
 ]
 
 export function SimilarProfiles({ currentUserId }: SimilarProfilesProps) {
+  const [likedProfiles, setLikedProfiles] = useState<string[]>([])
+
+  const handleLike = async (profileId: string) => {
+    try {
+      // Convert string ID to number for API call
+      const numericId = parseInt(profileId)
+      const response = await api.sendMatchRequest(numericId)
+      if (response.error) {
+        console.error('Failed to send match request:', response.error)
+      } else {
+        console.log('Match request sent successfully')
+        setLikedProfiles(prev => [...prev, profileId])
+      }
+    } catch (error) {
+      console.error('Error sending match request:', error)
+    }
+  }
   const filteredProfiles = similarProfiles.filter((profile) => profile.id !== currentUserId)
 
   return (
@@ -88,9 +107,18 @@ export function SimilarProfiles({ currentUserId }: SimilarProfilesProps) {
               <p className="text-xs text-white/60 mb-3">{profile.location}</p>
 
               <div className="flex gap-2 justify-center">
-                <Button size="sm" className="bg-[#FF0059] hover:bg-[#FF0059]/90 px-3 py-1 rounded-lg">
+                <Button 
+                  size="sm" 
+                  onClick={() => handleLike(profile.id)}
+                  disabled={likedProfiles.includes(profile.id)}
+                  className={`px-3 py-1 rounded-lg ${
+                    likedProfiles.includes(profile.id) 
+                      ? "bg-[#FF0059]/50 cursor-not-allowed" 
+                      : "bg-[#FF0059] hover:bg-[#FF0059]/90"
+                  }`}
+                >
                   <Heart className="h-3 w-3 mr-1" />
-                  Like
+                  {likedProfiles.includes(profile.id) ? "Liked" : "Like"}
                 </Button>
                 <Link href={`/user/${profile.id}`}>
                   <Button

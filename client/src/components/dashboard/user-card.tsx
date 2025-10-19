@@ -22,7 +22,7 @@ interface UserCardProps {
   user: User
   onLike: () => void
   onReject: () => void
-  onSuperLike: () => void
+  onSuperLike?: () => void // Made optional since we're removing super like
   isAnimating: boolean
 }
 

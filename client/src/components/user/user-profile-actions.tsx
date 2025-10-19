@@ -2,11 +2,12 @@
 
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Heart, X, Zap, MessageCircle, Gift, Star } from "lucide-react"
+import { Heart, X, MessageCircle, Gift, Star } from "lucide-react"
 import { useState } from "react"
+import { api } from "@/lib/api"
 
 interface User {
-  id: string
+  id: number
   name: string
 }
 
@@ -17,21 +18,27 @@ interface UserProfileActionsProps {
 export function UserProfileActions({ user }: UserProfileActionsProps) {
   const [isLiked, setIsLiked] = useState(false)
   const [isRejected, setIsRejected] = useState(false)
-  const [isSuperLiked, setIsSuperLiked] = useState(false)
 
-  const handleLike = () => {
+  const handleLike = async () => {
     setIsLiked(true)
-    // Handle like logic
+    try {
+      // Send match request to backend API
+      const response = await api.sendMatchRequest(user.id)
+      if (response.error) {
+        console.error('Failed to send match request:', response.error)
+      } else {
+        console.log('Match request sent successfully')
+      }
+    } catch (error) {
+      console.error('Error sending match request:', error)
+      setIsLiked(false) // Revert state on error
+    }
   }
 
   const handleReject = () => {
     setIsRejected(true)
-    // Handle reject logic
-  }
-
-  const handleSuperLike = () => {
-    setIsSuperLiked(true)
-    // Handle super like logic
+    // Hardcoded reject - no backend API call needed
+    console.log(`Rejected user ${user.id} (${user.name})`)
   }
 
   const handleMessage = () => {
@@ -67,17 +74,7 @@ export function UserProfileActions({ user }: UserProfileActionsProps) {
           />
         </Button>
 
-        <Button
-          onClick={handleSuperLike}
-          disabled={isSuperLiked}
-          className={`w-16 h-16 rounded-full transition-all duration-300 hover:scale-110 shadow-lg ${
-            isSuperLiked
-              ? "bg-blue-500/50 cursor-not-allowed shadow-blue-500/25"
-              : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 shadow-blue-500/25"
-          }`}
-        >
-          <Zap className={`h-7 w-7 ${isSuperLiked ? "text-blue-300" : "text-white"} transition-colors`} />
-        </Button>
+
 
         <Button
           onClick={handleLike}
@@ -93,7 +90,7 @@ export function UserProfileActions({ user }: UserProfileActionsProps) {
       </div>
 
       {/* Status Messages */}
-      {(isLiked || isRejected || isSuperLiked) && (
+      {(isLiked || isRejected) && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-6">
           {isLiked && (
             <div className="bg-[#FF0059]/20 border border-[#FF0059]/40 rounded-xl p-3">
@@ -103,11 +100,6 @@ export function UserProfileActions({ user }: UserProfileActionsProps) {
           {isRejected && (
             <div className="bg-red-500/20 border border-red-500/40 rounded-xl p-3">
               <p className="text-red-400 font-medium text-sm">You passed on {user.name}</p>
-            </div>
-          )}
-          {isSuperLiked && (
-            <div className="bg-blue-500/20 border border-blue-500/40 rounded-xl p-3">
-              <p className="text-blue-400 font-medium text-sm">⚡ You super liked {user.name}!</p>
             </div>
           )}
         </motion.div>

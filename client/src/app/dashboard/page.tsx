@@ -7,13 +7,14 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed"
 import { QuickStats } from "@/components/dashboard/quick-stats"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useState } from "react"
-import { Heart, X, Zap, Sparkles, TrendingUp, Users, MessageCircle, Settings } from "lucide-react"
+import { Heart, X, Sparkles, TrendingUp, Users, MessageCircle, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { recentMatches } from "@/data/user"
 import { useRecommendations, type RecommendedUser } from "@/hooks/use-recommendations"
 import { RecommendationFiltersComponent } from "@/components/dashboard/recommendation-filters"
 import { useEffect } from "react"
+import { api } from "@/lib/api"
 
 
 
@@ -36,7 +37,7 @@ const DAILY_TIPS = [
     buttonLabel: "Edit Interests",
   },
   {
-    text: "Be authentic! Profiles with genuine photos get 2x more super likes than heavily filtered ones.",
+    text: "Be authentic! Profiles with genuine photos get 2x more likes than heavily filtered ones.",
     buttonLabel: "Review Photos",
   },
 ]
@@ -47,7 +48,6 @@ const DAILY_TIP = DAILY_TIPS[0]
 // Profile Statistics (Initial Values)
 const INITIAL_STATS = {
   matches: 12,
-  superLikes: 3,
   views: 47,
 }
 
@@ -127,6 +127,19 @@ export default function DashboardPage() {
     setIsAnimating(true)
     setLikedUsers((prev) => [...prev, currentUser.ID])
 
+    try {
+      // Send match request to backend API
+      const response = await api.sendMatchRequest(currentUser.ID)
+      if (response.error) {
+        console.error('Failed to send match request:', response.error)
+        // You might want to show a toast notification here
+      } else {
+        console.log('Match request sent successfully')
+      }
+    } catch (error) {
+      console.error('Error sending match request:', error)
+    }
+
     // Remove from recommendations
     removeRecommendation(currentUser.ID)
 
@@ -134,9 +147,6 @@ export default function DashboardPage() {
       setCurrentUserIndex((prev) => prev + 1)
       setIsAnimating(false)
     }, 300)
-
-    // TODO: Send like to backend API
-    // await api.sendMatchRequest(currentUser.ID)
   }
 
   const handleReject = () => {
@@ -145,6 +155,9 @@ export default function DashboardPage() {
     setIsAnimating(true)
     setRejectedUsers((prev) => [...prev, currentUser.ID])
 
+    // Hardcoded reject - no backend API call needed
+    console.log(`Rejected user ${currentUser.ID} (${currentUser.Name})`)
+
     // Remove from recommendations
     removeRecommendation(currentUser.ID)
 
@@ -154,23 +167,7 @@ export default function DashboardPage() {
     }, 300)
   }
 
-  const handleSuperLike = async () => {
-    if (isAnimating || !currentUser) return
 
-    setIsAnimating(true)
-    setLikedUsers((prev) => [...prev, currentUser.ID])
-
-    // Remove from recommendations
-    removeRecommendation(currentUser.ID)
-
-    setTimeout(() => {
-      setCurrentUserIndex((prev) => prev + 1)
-      setIsAnimating(false)
-    }, 300)
-
-    // TODO: Send super like to backend API
-    // await api.sendMatchRequest(currentUser.ID)
-  }
 
   return (
     <ProtectedRoute>
@@ -187,7 +184,6 @@ export default function DashboardPage() {
                 <QuickStats 
                   likes={likedUsers.length} 
                   matches={INITIAL_STATS.matches} 
-                  superLikes={INITIAL_STATS.superLikes} 
                   views={INITIAL_STATS.views} 
                 />
                 <ActivityFeed />
@@ -259,7 +255,7 @@ export default function DashboardPage() {
                           user={convertToUserCardFormat(currentUser)}
                           onLike={handleLike}
                           onReject={handleReject}
-                          onSuperLike={handleSuperLike}
+                          onSuperLike={() => {}} // Dummy function since we're removing super like
                           isAnimating={isAnimating}
                         />
                       </motion.div>
@@ -270,30 +266,22 @@ export default function DashboardPage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: 0.3 }}
-                      className="flex justify-center items-center space-x-4 sm:space-x-6 mt-6 sm:mt-8"
+                      className="flex justify-center items-center space-x-6 sm:space-x-8 mt-6 sm:mt-8"
                     >
                       <Button
                         onClick={handleReject}
                         disabled={isAnimating}
-                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/20 hover:border-red-500/50 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed group"
+                        className="w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/20 hover:border-red-500/50 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed group"
                       >
-                        <X className="h-5 w-5 sm:h-7 sm:w-7 text-white/70 group-hover:text-red-500 transition-colors" />
-                      </Button>
-
-                      <Button
-                        onClick={handleSuperLike}
-                        disabled={isAnimating}
-                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 border-2 border-blue-400 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed group shadow-lg shadow-blue-500/25"
-                      >
-                        <Zap className="h-6 w-6 sm:h-8 sm:w-8 text-white group-hover:scale-110 transition-transform" />
+                        <X className="h-6 w-6 sm:h-8 sm:w-8 text-white/70 group-hover:text-red-500 transition-colors" />
                       </Button>
 
                       <Button
                         onClick={handleLike}
                         disabled={isAnimating}
-                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-r from-[#FF0059] to-[#FF0059]/80 hover:from-[#FF0059]/90 hover:to-[#FF0059]/70 border-2 border-[#FF0059] transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed group shadow-lg shadow-[#FF0059]/25"
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-[#FF0059] to-[#FF0059]/80 hover:from-[#FF0059]/90 hover:to-[#FF0059]/70 border-2 border-[#FF0059] transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed group shadow-lg shadow-[#FF0059]/25"
                       >
-                        <Heart className="h-5 w-5 sm:h-7 sm:w-7 text-white group-hover:scale-110 transition-transform" />
+                        <Heart className="h-6 w-6 sm:h-8 sm:w-8 text-white group-hover:scale-110 transition-transform" />
                       </Button>
                     </motion.div>
 
