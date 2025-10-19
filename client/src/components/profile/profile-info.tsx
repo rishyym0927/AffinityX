@@ -202,7 +202,7 @@ export function ProfileInfo({ detailed = false, userProfile }: ProfileInfoProps)
                 {userProfile?.City || "Location not specified"}
                 {userProfile?.Lat !== 0 && userProfile?.Lon !== 0 && userProfile && (
                   <span className="text-white/60 text-sm ml-2">
-                    (Lat: {userProfile.Lat.toFixed(4)}, Lon: {userProfile.Lon.toFixed(4)})
+                    {/* (Lat: {userProfile.Lat.toFixed(4)}, Lon: {userProfile.Lon.toFixed(4)}) */}
                   </span>
                 )}
               </div>

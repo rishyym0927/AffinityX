@@ -33,41 +33,54 @@ export default function UserProfilePage() {
 
         const userData = profileResponse.data
 
+        // Debug raw response to help detect shape mismatches
+        console.debug('profileResponse.data:', userData)
+
         // Fetch user images
         const imagesResponse = await api.getUserImages(parseInt(userId))
         let userImages = ["/default.jpg"] // Default image
-        
+
         if (!imagesResponse.error && imagesResponse.data?.images && imagesResponse.data.images.length > 0) {
-          userImages = imagesResponse.data.images.map((img: any) => img.url || img.image_url)
+          userImages = imagesResponse.data.images.map((img: any) => img.url || img.image_url || img.image)
         }
 
         setImages(userImages)
 
-        // Transform backend data to match component expectations
+        // Helper to read multiple possible keys from backend (different casing / snake_case)
+        const read = (obj: any, ...keys: string[]) => {
+          for (const k of keys) {
+            if (obj && Object.prototype.hasOwnProperty.call(obj, k) && obj[k] !== undefined && obj[k] !== null) {
+              return obj[k]
+            }
+          }
+          return undefined
+        }
+
+        // Normalize fields with fallbacks for common variants
         const transformedUser = {
-          id: userData.ID?.toString() || userId,
-          name: userData.Name || "Unknown User",
-          age: userData.Age || 0,
-          location: userData.City || "Unknown",
-          bio: `Lives in ${userData.City || "Unknown"}. Looking for meaningful connections and great conversations.`,
-          interests: ["Travel", "Music", "Coffee", "Movies", "Reading"], // Default interests
-          socialHabits: ["Social", "Active", "Friendly"], // Default habits
-          occupation: "Professional",
-          education: "University Graduate",
+          id: (read(userData, 'ID', 'id', 'user_id', 'UserID')?.toString()) || userId,
+          name: read(userData, 'Name', 'name', 'full_name') || 'Unknown User',
+          age: read(userData, 'Age', 'age') || 0,
+          location: read(userData, 'City', 'city', 'location') || 'Unknown',
+          bio: read(userData, 'Bio', 'bio') || `Lives in ${read(userData, 'City', 'city', 'location') || 'Unknown'}. Looking for meaningful connections and great conversations.`,
+          interests: read(userData, 'Interests', 'interests') || ['Travel', 'Music', 'Coffee', 'Movies', 'Reading'],
+          socialHabits: read(userData, 'SocialHabits', 'socialHabits', 'social_habits') || ['Social', 'Active', 'Friendly'],
+          occupation: read(userData, 'Occupation', 'occupation', 'job') || 'Professional',
+          education: read(userData, 'Education', 'education') || 'University Graduate',
           profileImage: userImages[0],
           images: userImages,
-          compatibility: userData.TotalScore || 0,
-          isOnline: Math.random() > 0.5,
-          lastSeen: "Recently active",
-          distance: "Nearby",
-          joinedDate: "2024",
-          verified: true,
-          mutualConnections: 0,
-          responseRate: "Usually responds within a few hours",
-          lookingFor: "Meaningful relationship",
-          relationshipType: "Single",
-          height: "5'8\"",
-          languages: ["English"],
+          compatibility: read(userData, 'TotalScore', 'total_score', 'totalScore') || 0,
+          isOnline: typeof read(userData, 'isOnline', 'online') === 'boolean' ? read(userData, 'isOnline', 'online') : Math.random() > 0.5,
+          lastSeen: read(userData, 'lastSeen', 'LastSeen') || 'Recently active',
+          distance: read(userData, 'distance') || 'Nearby',
+          joinedDate: read(userData, 'joinedDate', 'JoinedDate', 'joined') || '2024',
+          verified: !!read(userData, 'verified', 'is_verified', 'isVerified'),
+          mutualConnections: read(userData, 'mutualConnections', 'mutual_connections') || 0,
+          responseRate: read(userData, 'responseRate', 'response_rate') || 'Usually responds within a few hours',
+          lookingFor: read(userData, 'lookingFor', 'looking_for') || 'Meaningful relationship',
+          relationshipType: read(userData, 'relationshipType', 'relationship_type') || 'Single',
+          height: read(userData, 'height') || "5'8\"",
+          languages: read(userData, 'languages') || ['English'],
         }
 
         setUser(transformedUser)

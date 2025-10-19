@@ -2,10 +2,11 @@
 
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Heart, X, MapPin, Clock, MoreHorizontal, Eye, Loader2 } from "lucide-react"
+import { Heart, X, MapPin, Clock, Eye, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { api, apiRequest } from "@/lib/api"
 import { useAuth } from "@/hooks/use-auth"
+import { useRouter } from "next/navigation"
 
 interface MatchRequest {
   id: number
@@ -28,6 +29,7 @@ export function RequestsList() {
   const [error, setError] = useState<string | null>(null)
   const [processingId, setProcessingId] = useState<number | null>(null)
   const { isAuthenticated } = useAuth()
+  const router = useRouter()
 
   // Fetch match requests
   useEffect(() => {
@@ -50,6 +52,7 @@ export function RequestsList() {
 
       if (response.data && response.data.requests) {
         setRequests(response.data.requests)
+        console.log('Loaded requests:', response.data.requests)
       } else {
         setRequests([])
       }
@@ -194,9 +197,6 @@ export function RequestsList() {
                         <Heart className="h-4 w-4 text-[#FF0059]" />
                         <span className="text-sm text-[#FF0059] font-medium">{request.compatibility}% match</span>
                       </div>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-white/10">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
 
@@ -256,6 +256,7 @@ export function RequestsList() {
                       Decline
                     </Button>
                     <Button
+                      onClick={() => router.push(`/user/${request.sender_id}`)}
                       variant="outline"
                       className="border-white/20 hover:border-[#FF0059]/50 bg-white/5 hover:bg-white/10 px-6 py-2 rounded-xl"
                     >

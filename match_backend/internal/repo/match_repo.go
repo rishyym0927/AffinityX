@@ -212,13 +212,16 @@ func (p *Postgres) GetIncomingMatchRequests(ctx context.Context, receiverID int6
 			u.name,
 			COALESCE(u.age, 0) AS age,
 			COALESCE(u.city, '') AS city,
-			COALESCE(ui.public_url, '') AS image,
+			COALESCE(
+				(SELECT public_url FROM user_images WHERE user_id = u.user_id AND is_primary = true LIMIT 1),
+				(SELECT public_url FROM user_images WHERE user_id = u.user_id ORDER BY uploaded_at DESC LIMIT 1),
+				''
+			) AS image,
 			COALESCE(s.total_score, 0) AS compatibility,
 			mr.created_at
 		FROM match_requests mr
 		INNER JOIN users u ON mr.sender_id = u.user_id
 		LEFT JOIN scores s ON u.user_id = s.user_id
-		LEFT JOIN user_images ui ON u.user_id = ui.user_id AND ui.is_primary = true
 		WHERE mr.receiver_id = $1 
 		  AND mr.status = 'pending'
 		ORDER BY mr.created_at DESC
@@ -302,7 +305,11 @@ func (p *Postgres) GetRecentMatches(ctx context.Context, userID int64) ([]MatchR
 			u.name,
 			COALESCE(u.age, 0) AS age,
 			COALESCE(u.city, '') AS city,
-			COALESCE(ui.public_url, '') AS image,
+			COALESCE(
+				(SELECT public_url FROM user_images WHERE user_id = u.user_id AND is_primary = true LIMIT 1),
+				(SELECT public_url FROM user_images WHERE user_id = u.user_id ORDER BY uploaded_at DESC LIMIT 1),
+				''
+			) AS image,
 			COALESCE(s.total_score, 0) AS compatibility,
 			m.matched_at,
 			COALESCE(msg.body, '') AS last_message,
@@ -315,7 +322,6 @@ func (p *Postgres) GetRecentMatches(ctx context.Context, userID int64) ([]MatchR
 			END = u.user_id
 		)
 		LEFT JOIN scores s ON u.user_id = s.user_id
-		LEFT JOIN user_images ui ON u.user_id = ui.user_id AND ui.is_primary = true
 		LEFT JOIN LATERAL (
 			SELECT body, sent_at
 			FROM messages
