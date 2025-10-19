@@ -29,7 +29,7 @@ func (s *Server) setupMiddleware(r *chi.Mux) {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"hhttps://affinity-x-o1wv.vercel.app", "http://localhost:3000"},
+		AllowedOrigins:   []string{"https://affinity-x-o1wv.vercel.app", "http://localhost:3000"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Requested-With"},
 		ExposedHeaders:   []string{"Link", "Content-Length"},
