@@ -15,7 +15,7 @@ import {
  */
 export function useUserStats() {
   const [stats, setStats] = useState<UserActivityStats | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const fetchStats = useCallback(async () => {
@@ -34,7 +34,13 @@ export function useUserStats() {
   }, [])
 
   useEffect(() => {
-    fetchStats()
+    // Check if auth token exists before fetching
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+    if (token) {
+      fetchStats()
+    } else {
+      setIsLoading(false)
+    }
   }, [fetchStats])
 
   return { stats, isLoading, error, refetch: fetchStats }
@@ -45,7 +51,7 @@ export function useUserStats() {
  */
 export function useWeeklyActivity() {
   const [weeklyActivity, setWeeklyActivity] = useState<WeeklyActivityData[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const fetchWeeklyActivity = useCallback(async () => {
@@ -64,7 +70,13 @@ export function useWeeklyActivity() {
   }, [])
 
   useEffect(() => {
-    fetchWeeklyActivity()
+    // Check if auth token exists before fetching
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+    if (token) {
+      fetchWeeklyActivity()
+    } else {
+      setIsLoading(false)
+    }
   }, [fetchWeeklyActivity])
 
   return { weeklyActivity, isLoading, error, refetch: fetchWeeklyActivity }
@@ -75,7 +87,7 @@ export function useWeeklyActivity() {
  */
 export function useRequestStats() {
   const [requestStats, setRequestStats] = useState<RequestStatistics | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const fetchRequestStats = useCallback(async () => {
@@ -94,7 +106,13 @@ export function useRequestStats() {
   }, [])
 
   useEffect(() => {
-    fetchRequestStats()
+    // Check if auth token exists before fetching
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+    if (token) {
+      fetchRequestStats()
+    } else {
+      setIsLoading(false)
+    }
   }, [fetchRequestStats])
 
   return { requestStats, isLoading, error, refetch: fetchRequestStats }
@@ -105,7 +123,7 @@ export function useRequestStats() {
  */
 export function useProfileAnalytics() {
   const [analytics, setAnalytics] = useState<ProfileAnalytics | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const fetchAnalytics = useCallback(async () => {
@@ -124,7 +142,13 @@ export function useProfileAnalytics() {
   }, [])
 
   useEffect(() => {
-    fetchAnalytics()
+    // Check if auth token exists before fetching
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+    if (token) {
+      fetchAnalytics()
+    } else {
+      setIsLoading(false)
+    }
   }, [fetchAnalytics])
 
   return { analytics, isLoading, error, refetch: fetchAnalytics }
@@ -136,7 +160,7 @@ export function useProfileAnalytics() {
  */
 export function useDashboardStats() {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const fetchDashboardStats = useCallback(async () => {
@@ -155,7 +179,13 @@ export function useDashboardStats() {
   }, [])
 
   useEffect(() => {
-    fetchDashboardStats()
+    // Check if auth token exists before fetching
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+    if (token) {
+      fetchDashboardStats()
+    } else {
+      setIsLoading(false)
+    }
   }, [fetchDashboardStats])
 
   return { dashboardStats, isLoading, error, refetch: fetchDashboardStats }

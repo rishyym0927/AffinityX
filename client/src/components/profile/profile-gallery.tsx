@@ -24,7 +24,13 @@ export function ProfileGallery() {
 
   // Fetch user images on mount
   useEffect(() => {
-    fetchImages()
+    // Check if auth token exists before fetching
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+    if (token) {
+      fetchImages()
+    } else {
+      setIsLoading(false)
+    }
   }, [])
 
   const fetchImages = async () => {

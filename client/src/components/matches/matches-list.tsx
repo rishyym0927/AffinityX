@@ -6,6 +6,7 @@ import { MessageCircle, Heart, MoreHorizontal, MapPin, Clock, Loader2 } from "lu
 import { useState, useEffect } from "react"
 import { api } from "@/lib/api"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/use-auth"
 
 interface Match {
   match_id: number
@@ -28,10 +29,20 @@ export function MatchesList() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  
+  // Import useAuth to check authentication state
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
 
   useEffect(() => {
-    fetchRecentMatches()
-  }, [])
+    // Only fetch when authenticated and auth is not loading
+    if (isAuthenticated && !authLoading) {
+      fetchRecentMatches()
+    } else if (!isAuthenticated && !authLoading) {
+      // If not authenticated after auth loading completes, set empty state
+      setLoading(false)
+      setMatches([])
+    }
+  }, [isAuthenticated, authLoading])
 
   const fetchRecentMatches = async () => {
     setLoading(true)

@@ -28,15 +28,20 @@ export function RequestsList() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [processingId, setProcessingId] = useState<number | null>(null)
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
   const router = useRouter()
 
-  // Fetch match requests
+  // Fetch match requests - wait for auth to finish loading
   useEffect(() => {
-    if (isAuthenticated) {
+    // Only fetch when authenticated and auth is not loading
+    if (isAuthenticated && !authLoading) {
       fetchRequests()
+    } else if (!isAuthenticated && !authLoading) {
+      // If not authenticated after auth loading completes, set empty state
+      setIsLoading(false)
+      setRequests([])
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, authLoading])
 
   const fetchRequests = async () => {
     try {
