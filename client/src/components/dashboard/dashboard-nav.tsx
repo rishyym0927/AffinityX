@@ -7,6 +7,8 @@ import { Search, MessageCircle, Heart, UserCheck, User, Bell, Settings, LogOut }
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
 import { useState, useEffect, useRef } from "react"
+import { api } from "@/lib/api"
+import Image from "next/image"
 
 const navItems = [
   { name: "Search", href: "/dashboard", icon: Search },
@@ -20,7 +22,36 @@ export function DashboardNav() {
   const pathname = usePathname()
   const { user, logout } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [primaryImage, setPrimaryImage] = useState<string>("/default.jpg")
+  const [isLoadingImage, setIsLoadingImage] = useState(true)
   const userMenuRef = useRef<HTMLDivElement>(null)
+
+  // Fetch user's primary image
+  useEffect(() => {
+    const fetchPrimaryImage = async () => {
+      setIsLoadingImage(true)
+      try {
+        const response = await api.listUserImages()
+        if (response.data?.images && Array.isArray(response.data.images)) {
+          const images = response.data.images
+          const primary = images.find((img: any) => img.is_primary)
+          if (primary?.image_url) {
+            setPrimaryImage(primary.image_url)
+          } else if (images.length > 0 && images[0].image_url) {
+            setPrimaryImage(images[0].image_url)
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch primary image:", err)
+      } finally {
+        setIsLoadingImage(false)
+      }
+    }
+
+    if (user) {
+      fetchPrimaryImage()
+    }
+  }, [user])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -103,16 +134,18 @@ export function DashboardNav() {
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center space-x-3 p-2 rounded-xl hover:bg-white/10 transition-all duration-300"
               >
-                <div className="w-10 h-10 bg-gradient-to-br from-[#FF0059]/20 to-[#FF0059]/10 rounded-full border-2 border-[#FF0059]/30 flex items-center justify-center cursor-pointer hover:border-[#FF0059]/50 transition-all duration-300">
-                  {user?.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" />
+                <div className="w-10 h-10 bg-gradient-to-br from-[#FF0059]/20 to-[#FF0059]/10 rounded-full border-2 border-[#FF0059]/30 flex items-center justify-center cursor-pointer hover:border-[#FF0059]/50 transition-all duration-300 overflow-hidden">
+                  {isLoadingImage ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#FF0059]"></div>
+                  ) : primaryImage !== "/default.jpg" ? (
+                    <Image src={primaryImage} alt={user?.name || "Profile"} width={40} height={40} className="w-full h-full rounded-full object-cover" />
                   ) : (
                     <User className="h-5 w-5 text-[#FF0059]" />
                   )}
                 </div>
                 <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-white">{user?.name}</p>
-                  <p className="text-xs text-white/60">{user?.email}</p>
+                  <p className="text-sm font-medium text-white">{user?.name || "Loading..."}</p>
+                  <p className="text-xs text-white/60">{user?.email || ""}</p>
                 </div>
               </button>
 
@@ -126,16 +159,18 @@ export function DashboardNav() {
                 >
                   <div className="p-4 border-b border-white/10">
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-[#FF0059]/20 to-[#FF0059]/10 rounded-full border-2 border-[#FF0059]/30 flex items-center justify-center">
-                        {user?.avatar ? (
-                          <img src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" />
+                      <div className="w-12 h-12 bg-gradient-to-br from-[#FF0059]/20 to-[#FF0059]/10 rounded-full border-2 border-[#FF0059]/30 flex items-center justify-center overflow-hidden">
+                        {isLoadingImage ? (
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#FF0059]"></div>
+                        ) : primaryImage !== "/default.jpg" ? (
+                          <Image src={primaryImage} alt={user?.name || "Profile"} width={48} height={48} className="w-full h-full rounded-full object-cover" />
                         ) : (
                           <User className="h-6 w-6 text-[#FF0059]" />
                         )}
                       </div>
                       <div>
-                        <p className="font-medium text-white">{user?.name}</p>
-                        <p className="text-sm text-white/60">{user?.email}</p>
+                        <p className="font-medium text-white">{user?.name || "Loading..."}</p>
+                        <p className="text-sm text-white/60">{user?.email || ""}</p>
                       </div>
                     </div>
                   </div>

@@ -3,6 +3,13 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { api } from '@/lib/api'
+import { saveToCache, getFromCache, clearCache } from '@/lib/storage'
+
+// Cache keys
+const CACHE_KEYS = {
+  RECOMMENDATIONS: 'recommendations_cache',
+  FILTERS: 'recommendations_filters_cache',
+}
 
 // Types - Updated to match backend response format
 export interface RecommendedUser {
@@ -92,6 +99,24 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
   
   const { isAuthenticated, user } = useAuth()
 
+  // Load cached data on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isAuthenticated) {
+      const cachedRecommendations = getFromCache<Candidate[]>(CACHE_KEYS.RECOMMENDATIONS)
+      const cachedFilters = getFromCache<RecommendationFilters>(CACHE_KEYS.FILTERS)
+      
+      if (cachedRecommendations && cachedRecommendations.length > 0) {
+        console.log('Loaded recommendations from cache:', cachedRecommendations.length)
+        setRecommendations(cachedRecommendations)
+      }
+      
+      if (cachedFilters) {
+        console.log('Loaded filters from cache:', cachedFilters)
+        setCurrentFilters(cachedFilters)
+      }
+    }
+  }, [isAuthenticated])
+
   // Helper to dedupe candidates by user id
   const dedupe = (existing: Candidate[], incoming: Candidate[]) => {
     const seen = new Set(existing.map((c) => c.user.id))
@@ -117,7 +142,7 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
 
     // Prevent rapid successive calls (debounce at function level)
     const now = Date.now()
-    if (now - lastFetchTimeRef.current < 1000) {
+    if (now - lastFetchTimeRef.current < 500) {
       console.log('Fetch called too soon after previous, skipping')
       return
     }
@@ -128,6 +153,7 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
       setIsLoading(true)
       setError(null)
       
+      console.log('Fetching recommendations with filters:', filters)
       const response = await api.getRecommendations(filters) as any
       console.log('Fetched recommendations:', response)
       
@@ -139,9 +165,14 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
         const newCandidates: Candidate[] = response.data.candidates || []
         
         if (append) {
-          setRecommendations(prev => dedupe(prev, newCandidates))
+          const merged = dedupe(recommendations, newCandidates)
+          setRecommendations(merged)
+          // Cache the merged results
+          saveToCache(CACHE_KEYS.RECOMMENDATIONS, merged, 5 * 60 * 1000) // 5 minutes
         } else {
           setRecommendations(newCandidates)
+          // Cache the new results
+          saveToCache(CACHE_KEYS.RECOMMENDATIONS, newCandidates, 5 * 60 * 1000)
         }
         
         // Update hasMore based on the number of results returned
@@ -151,6 +182,7 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
         
         // Update current filters only on successful fetch
         setCurrentFilters(filters)
+        saveToCache(CACHE_KEYS.FILTERS, filters, 5 * 60 * 1000)
         
         // Clear any previous errors on success
         setError(null)
@@ -198,6 +230,8 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
   const removeRecommendation = useCallback((userId: number) => {
     setRecommendations(prev => {
       const filtered = prev.filter(c => c.user.id !== userId)
+      // Update cache
+      saveToCache(CACHE_KEYS.RECOMMENDATIONS, filtered, 5 * 60 * 1000)
       // If we've removed profiles and are running low, mark hasMore as uncertain
       // The dashboard will trigger a refetch if needed
       if (filtered.length === 0) {
@@ -222,9 +256,12 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
     }
   }, [removeRecommendation])
 
-  // Set default filters based on user preferences (only once)
+  // Set default filters based on user preferences and auto-fetch (only once)
   useEffect(() => {
-    if (user && isAuthenticated && !hasInitialized) {
+    // Only run once when user is authenticated and we haven't initialized yet
+    if (!isAuthenticated || !user || hasInitialized) return
+
+    const initializeRecommendations = async () => {
       const userBasedFilters: RecommendationFilters = {
         ...DEFAULT_FILTERS,
         // Set opposite gender by default
@@ -236,16 +273,14 @@ export const RecommendationsProvider: React.FC<RecommendationsProviderProps> = (
       
       setCurrentFilters(userBasedFilters)
       setHasInitialized(true)
+      
+      // Fetch initial recommendations immediately
+      await fetchRecommendations(userBasedFilters, false)
     }
-  }, [user, isAuthenticated, hasInitialized])
 
-  // Auto-fetch recommendations when user becomes authenticated (only once)
-  useEffect(() => {
-    if (isAuthenticated && hasInitialized && recommendations.length === 0 && !isLoading && !isFetching && hasMore) {
-      fetchRecommendations()
-    }
+    initializeRecommendations()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, hasInitialized, recommendations.length, isLoading, isFetching, hasMore])
+  }, [user, isAuthenticated, hasInitialized])
 
   const value: RecommendationsContextType = {
     // State

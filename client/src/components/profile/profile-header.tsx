@@ -39,21 +39,26 @@ interface ProfileHeaderProps {
 export function ProfileHeader({ userProfile }: ProfileHeaderProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [primaryImage, setPrimaryImage] = useState<string>("/default.jpg")
+  const [isLoadingImage, setIsLoadingImage] = useState(true)
   const { user } = useAuth()
 
   // Get name from localStorage as immediate fallback
   const storedName = typeof window !== 'undefined' ? localStorage.getItem('user_name') : null
   
   // Use auth context user as fallback for immediate display
-  const displayName = userProfile?.Name || user?.name || storedName || "User"
-  const displayAge = userProfile?.Age || user?.age || 0
-  const displayCity = userProfile?.City || user?.city || "Location not specified"
+  const displayName = userProfile?.Name || user?.name || storedName || "Loading..."
+  const displayAge = userProfile?.Age || user?.age
+  const displayCity = userProfile?.City || user?.city || "Loading..."
   const displayGender = userProfile?.Gender || user?.gender || ""
   const displayTotalScore = userProfile?.TotalScore || user?.totalScore || 0
+  
+  // Determine if data is still loading
+  const isLoading = !userProfile && !user
 
   // Fetch user images and find primary
   useEffect(() => {
     const fetchPrimaryImage = async () => {
+      setIsLoadingImage(true)
       try {
         const response = await api.listUserImages()
         if (response.data?.images && Array.isArray(response.data.images)) {
@@ -68,6 +73,8 @@ export function ProfileHeader({ userProfile }: ProfileHeaderProps) {
         }
       } catch (err) {
         console.error("Failed to fetch primary image:", err)
+      } finally {
+        setIsLoadingImage(false)
       }
     }
 
@@ -90,14 +97,20 @@ export function ProfileHeader({ userProfile }: ProfileHeaderProps) {
           {/* Profile Image */}
           <div className="relative group">
             <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-br from-[#FF0059]/20 to-[#FF0059]/10 border-4 border-[#FF0059]/30 overflow-hidden">
-              <Image 
-                width={160} 
-                height={160} 
-                src={primaryImage} 
-                alt="Profile" 
-                className="w-full h-full object-cover"
-                onError={() => setPrimaryImage("/default.jpg")}
-              />
+              {isLoadingImage ? (
+                <div className="w-full h-full flex items-center justify-center bg-white/5">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF0059]"></div>
+                </div>
+              ) : (
+                <Image 
+                  width={160} 
+                  height={160} 
+                  src={primaryImage} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                  onError={() => setPrimaryImage("/default.jpg")}
+                />
+              )}
             </div>
             <button 
               className="absolute bottom-2 right-2 w-10 h-10 bg-[#FF0059] hover:bg-[#FF0059]/90 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg shadow-[#FF0059]/25"
@@ -147,7 +160,11 @@ export function ProfileHeader({ userProfile }: ProfileHeaderProps) {
               <div className="flex items-center justify-center sm:justify-start gap-2">
                 <MapPin className="h-4 w-4 text-[#FF0059] flex-shrink-0" />
                 <span className="text-sm">
-                  {displayCity}, Age: {displayAge || "N/A"}
+                  {isLoading ? (
+                    <span className="inline-block w-32 h-4 bg-white/10 rounded animate-pulse"></span>
+                  ) : (
+                    `${displayCity}${displayAge ? `, Age: ${displayAge}` : ""}`
+                  )}
                 </span>
               </div>
               <div className="flex items-center justify-center sm:justify-start gap-2">
@@ -164,10 +181,19 @@ export function ProfileHeader({ userProfile }: ProfileHeaderProps) {
 
             {/* Bio */}
             <p className="text-white/70 text-sm sm:text-base leading-relaxed mt-4 max-w-2xl">
-              Gender: {displayGender === 'M' ? 'Male' : displayGender === 'F' ? 'Female' : 'Not specified'} | 
-              Total Score: {displayTotalScore} | 
-              Passionate about connecting with like-minded individuals and building meaningful relationships. 
-              When I'm not working, you'll find me exploring new places and trying new experiences around the city.
+              {isLoading ? (
+                <>
+                  <span className="inline-block w-full h-4 bg-white/10 rounded animate-pulse mb-2"></span>
+                  <span className="inline-block w-3/4 h-4 bg-white/10 rounded animate-pulse"></span>
+                </>
+              ) : (
+                <>
+                  Gender: {displayGender === 'M' ? 'Male' : displayGender === 'F' ? 'Female' : 'Not specified'} | 
+                  Total Score: {displayTotalScore} | 
+                  Passionate about connecting with like-minded individuals and building meaningful relationships. 
+                  When I'm not working, you'll find me exploring new places and trying new experiences around the city.
+                </>
+              )}
             </p>
           </div>
         </div>

@@ -15,6 +15,7 @@ export function ProfileGallery() {
   
   // Get images from context
   const { images, isLoading, refreshImages, removeImage: removeImageFromContext, updateImage } = useUserData()
+  const safeImages = Array.isArray(images) ? images : []
 
   const handleImageUpload = () => {
     fileInputRef.current?.click()
@@ -159,7 +160,7 @@ export function ProfileGallery() {
             </motion.div>
 
             {/* Existing Images */}
-            {images.map((image, index) => (
+            {safeImages.map((image, index) => (
               <motion.div
                 key={image.id}
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -175,7 +176,7 @@ export function ProfileGallery() {
                 />
 
                 {/* Primary Badge */}
-                {image.is_primary && (
+                {image?.is_primary && (
                   <div className="absolute top-3 left-3 bg-[#FF0059] text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
                     <Star className="h-3 w-3" fill="currentColor" />
                     Primary
@@ -216,7 +217,7 @@ export function ProfileGallery() {
             ))}
 
             {/* Empty State */}
-            {images.length === 0 && (
+            {safeImages.length === 0 && (
               <div className="w-full text-center py-12">
                 <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
                   <ImageIcon className="h-8 w-8 text-white/30" />

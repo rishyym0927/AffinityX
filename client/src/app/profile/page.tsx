@@ -136,9 +136,6 @@ export default function ProfilePage() {
             )}
 
             {activeTab === "gallery" && <ProfileGallery />}
-
-            {activeTab === "info" && <ProfileInfo detailed userProfile={profile} />}
-
             {activeTab === "settings" && <ProfileSettings />}
           </motion.div>
         </div>

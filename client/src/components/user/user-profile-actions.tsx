@@ -23,7 +23,7 @@ export function UserProfileActions({ user }: UserProfileActionsProps) {
     setIsLiked(true)
     try {
       // Send match request to backend API
-  const response = await api.sendMatchRequest(parseInt(user.id))
+  const response = await api.sendMatchRequest(parseInt(user.id || '0'))
       if (response.error) {
         console.error('Failed to send match request:', response.error)
       } else {
@@ -94,12 +94,12 @@ export function UserProfileActions({ user }: UserProfileActionsProps) {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-6">
           {isLiked && (
             <div className="bg-[#FF0059]/20 border border-[#FF0059]/40 rounded-xl p-3">
-              <p className="text-[#FF0059] font-medium text-sm">❤️ You liked {user.name}!</p>
+              <p className="text-[#FF0059] font-medium text-sm">❤ You liked {user?.name || 'the user'}!</p>
             </div>
           )}
           {isRejected && (
             <div className="bg-red-500/20 border border-red-500/40 rounded-xl p-3">
-              <p className="text-red-400 font-medium text-sm">You passed on {user.name}</p>
+              <p className="text-red-400 font-medium text-sm">You passed on {user?.name || 'the user'}</p>
             </div>
           )}
         </motion.div>

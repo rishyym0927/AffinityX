@@ -98,7 +98,7 @@ export default function DashboardPage() {
   const router = useRouter()
 
   // Fetch dashboard statistics from context
-  const { dashboardStats } = useUserData()
+  const { dashboardStats, isLoading: userDataLoading, isInitialized: userDataInitialized } = useUserData()
   
   // Fetch matches from context
   const { matches: recentMatches, isLoading: loadingMatches } = useUserData()
@@ -214,7 +214,16 @@ export default function DashboardPage() {
         {/* Main Content with proper spacing from navbar */}
         <main className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
-            {/* Flex-based responsive layout */}
+            {/* Show loading screen until user data is initialized */}
+            {(userDataLoading || !userDataInitialized) ? (
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#FF0059] mx-auto mb-4"></div>
+                  <p className="text-white/70 text-lg">Loading your dashboard...</p>
+                </div>
+              </div>
+            ) : (
+            // Flex-based responsive layout
             <div className="flex flex-wrap gap-6 lg:gap-8">
               {/* Left Sidebar - Stats & Activity */}
               <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 space-y-6 order-2 lg:order-1">
@@ -388,11 +397,21 @@ export default function DashboardPage() {
 
                 <div className="space-y-3">
                   {loadingMatches ? (
-                    <div className="py-6 text-center text-white/60">Loading matches...</div>
+                    <div className="space-y-3">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-center space-x-3 p-2 rounded-xl">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 animate-pulse"></div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-white/10 rounded w-24 mb-1 animate-pulse"></div>
+                            <div className="h-3 bg-white/10 rounded w-16 animate-pulse"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   ) : recentMatches.length === 0 ? (
                     <div className="py-6 text-center text-white/60">No recent matches yet</div>
                   ) : (
-                    recentMatches.map((match, index) => (
+                    recentMatches.slice(0, 5).map((match, index) => (
                       <div
                         key={match.match_id}
                         onClick={() => router.push(`/user/${match.user_id}`)}
@@ -402,11 +421,11 @@ export default function DashboardPage() {
                           width={40}
                           height={40}
                           src={match.image || "/default.jpg"}
-                          alt={match.name}
-                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 flex-shrink-0"
+                          alt={match.name || "Match"}
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 flex-shrink-0 object-cover"
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-white text-sm truncate">{match.name}</div>
+                          <div className="font-medium text-white text-sm truncate">{match.name || "Unknown"}</div>
                           <div className="text-white/60 text-xs">{match.last_message_at || match.matched_at || 'Recently'}</div>
                         </div>
                         <MessageCircle className="h-4 w-4 text-[#FF0059] flex-shrink-0" />
@@ -478,19 +497,19 @@ export default function DashboardPage() {
               </motion.div>
             </div>
           </div>
-          
-        </div>
-      </main>
+            )}
+          </div>
+        </main>
    
-      {/* Recommendation Filters Modal */}
-      <RecommendationFiltersComponent 
-        isOpen={showFilters} 
-        onClose={() => setShowFilters(false)}
-        onFiltersApplied={() => {
-          setCurrentUserIndex(0) // Reset to first card when filters change
-        }}
-      />
-    </div>
+        {/* Recommendation Filters Modal */}
+        <RecommendationFiltersComponent 
+          isOpen={showFilters} 
+          onClose={() => setShowFilters(false)}
+          onFiltersApplied={() => {
+            setCurrentUserIndex(0) // Reset to first card when filters change
+          }}
+        />
+      </div>
     </ProtectedRoute>
   )
 }

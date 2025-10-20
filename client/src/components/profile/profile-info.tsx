@@ -240,41 +240,6 @@ export function ProfileInfo({ detailed = false, userProfile }: ProfileInfoProps)
         </div>
       </motion.div>
 
-      {/* Personality Scores */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: detailed ? 0.3 : 0.15 }}
-        className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6"
-      >
-        <h3 className="text-lg font-semibold text-white mb-6">Personality Assessment</h3>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
-            <span className="text-white/80">Communication</span>
-            <span className="text-[#FF0059] font-semibold">{userProfile?.Communication || 0}/10</span>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
-            <span className="text-white/80">Confidence</span>
-            <span className="text-[#FF0059] font-semibold">{userProfile?.Confidence || 0}/10</span>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
-            <span className="text-white/80">Emotional Intelligence</span>
-            <span className="text-[#FF0059] font-semibold">{userProfile?.Emotional || 0}/10</span>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
-            <span className="text-white/80">Personality</span>
-            <span className="text-[#FF0059] font-semibold">{userProfile?.Personality || 0}/10</span>
-          </div>
-        </div>
-        
-        <div className="mt-4 p-4 bg-gradient-to-r from-[#FF0059]/10 to-[#FF0059]/5 border border-[#FF0059]/20 rounded-xl">
-          <div className="flex items-center justify-between">
-            <span className="text-white font-semibold">Total Score</span>
-            <span className="text-[#FF0059] text-xl font-bold">{userProfile?.TotalScore || 0}/40</span>
-          </div>
-        </div>
-      </motion.div>
 
       {/* Interests */}
       <motion.div

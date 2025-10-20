@@ -13,6 +13,7 @@ export function MatchesList() {
   
   // Get data from context
   const { matches, isLoading, error, refreshMatches } = useUserData()
+  const safeMatches = Array.isArray(matches) ? matches : []
 
   const handleChatClick = (matchId: number) => {
     // Navigate to chat or open chat modal
@@ -62,10 +63,10 @@ export function MatchesList() {
     >
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-white">Recent Matches</h3>
-        <span className="text-sm text-white/60">{matches.length} matches</span>
+  <span className="text-sm text-white/60">{safeMatches.length} matches</span>
       </div>
 
-      {matches.length === 0 ? (
+  {safeMatches.length === 0 ? (
         <div className="text-center py-12">
           <Heart className="h-16 w-16 text-white/20 mx-auto mb-4" />
           <h4 className="text-lg font-semibold text-white mb-2">No matches yet</h4>
@@ -76,7 +77,7 @@ export function MatchesList() {
         </div>
       ) : (
         <div className="space-y-4">
-          {matches.map((match, index) => (
+          {safeMatches.map((match, index) => (
             <motion.div
               key={match.match_id}
               initial={{ opacity: 0, y: 20 }}
@@ -91,10 +92,10 @@ export function MatchesList() {
                 {/* Profile Image */}
                 <div className="relative">
                   <img
-                    src={match.image || "/default.jpg"}
-                    alt={match.name}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-white/20"
-                  />
+                      src={match.image || "/default.jpg"}
+                      alt={match.name || 'Match'}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-white/20"
+                    />
                   {match.unread_count > 0 && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF0059] rounded-full flex items-center justify-center">
                       <span className="text-xs text-white font-bold">{match.unread_count}</span>
@@ -105,8 +106,8 @@ export function MatchesList() {
                 {/* Match Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-semibold text-white truncate">
-                      {match.name}, {match.age}
+                      <h4 className="font-semibold text-white truncate">
+                      {match.name || 'Unknown'}, {match.age || ''}
                     </h4>
                     <div className="flex items-center gap-1">
                       <Heart className="h-3 w-3 text-[#FF0059]" />

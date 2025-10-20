@@ -18,6 +18,16 @@ interface UserProfileInfoProps {
 }
 
 export function UserProfileInfo({ user }: UserProfileInfoProps) {
+  const isLoading = !user
+  const safeUser = {
+    interests: user?.interests || [],
+    socialHabits: user?.socialHabits || [],
+    lookingFor: user?.lookingFor || '',
+    relationshipType: user?.relationshipType || '',
+    height: user?.height || '',
+    languages: user?.languages || [],
+    joinedDate: user?.joinedDate || '',
+  }
   return (
     <div className="space-y-6">
       {/* About Section */}
@@ -77,7 +87,7 @@ export function UserProfileInfo({ user }: UserProfileInfoProps) {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {user.languages.map((language, index) => (
+          {(safeUser.languages || []).map((language, index) => (
             <span
               key={index}
               className="px-3 py-2 bg-blue-500/20 border border-blue-500/30 text-blue-400 text-sm font-medium rounded-lg"
@@ -101,7 +111,7 @@ export function UserProfileInfo({ user }: UserProfileInfoProps) {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {user.interests.map((interest, index) => (
+          {(safeUser.interests || []).map((interest, index) => (
             <span
               key={index}
               className="px-3 py-2 bg-[#FF0059]/20 border border-[#FF0059]/40 text-[#FF0059] text-sm font-medium rounded-lg"

@@ -21,11 +21,12 @@ export const getUserId = (): string | null => {
 }
 
 /**
- * Make an authenticated API request
+ * Make an authenticated API request with retry logic
  */
 export async function apiRequest<T = any>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  retries: number = 2
 ): Promise<{ data?: T; error?: string }> {
   const token = getAuthToken()
   
@@ -46,23 +47,69 @@ export async function apiRequest<T = any>(
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-    })
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        headers,
+      })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      return { error: errorText || `Request failed with status ${response.status}` }
+      // Handle empty responses
+      const contentType = response.headers.get('content-type')
+      const hasJsonContent = contentType && contentType.includes('application/json')
+
+      if (!response.ok) {
+        let errorText = `Request failed with status ${response.status}`
+        
+        // Try to get error message from response
+        if (hasJsonContent) {
+          try {
+            const errorData = await response.json()
+            errorText = errorData.error || errorData.message || errorText
+          } catch {
+            errorText = await response.text() || errorText
+          }
+        } else {
+          errorText = await response.text() || errorText
+        }
+        
+        // Don't retry on auth errors (401, 403)
+        if (response.status === 401 || response.status === 403) {
+          return { error: errorText }
+        }
+        
+        // Retry on server errors (500+) and rate limits (429)
+        if (attempt < retries && (response.status >= 500 || response.status === 429)) {
+          const delay = Math.min(1000 * Math.pow(2, attempt), 5000) // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, delay))
+          continue
+        }
+        
+        return { error: errorText }
+      }
+
+      // Handle empty successful responses
+      if (!hasJsonContent || response.status === 204) {
+        return { data: {} as T }
+      }
+
+      const data = await response.json()
+      return { data }
+    } catch (error) {
+      console.error(`API request error (attempt ${attempt + 1}/${retries + 1}):`, error)
+      
+      // Retry on network errors
+      if (attempt < retries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt), 5000)
+        await new Promise(resolve => setTimeout(resolve, delay))
+        continue
+      }
+      
+      return { error: 'Network error. Please check your connection and try again.' }
     }
-
-    const data = await response.json()
-    return { data }
-  } catch (error) {
-    console.error('API request error:', error)
-    return { error: 'Network error. Please check if the backend is running.' }
   }
+
+  return { error: 'Request failed after multiple attempts.' }
 }
 
 /**

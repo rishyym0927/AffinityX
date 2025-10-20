@@ -3,6 +3,16 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { api } from '@/lib/api'
+import { saveToCache, getFromCache } from '@/lib/storage'
+
+// Cache keys
+const CACHE_KEYS = {
+  PROFILE: 'user_profile_cache',
+  IMAGES: 'user_images_cache',
+  MATCH_REQUESTS: 'match_requests_cache',
+  MATCHES: 'matches_cache',
+  DASHBOARD_STATS: 'dashboard_stats_cache',
+}
 
 // Types
 export interface UserProfile {
@@ -139,6 +149,33 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
   
   const { isAuthenticated, user, isLoading: authLoading } = useAuth()
 
+  // Load cached data on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isAuthenticated) {
+      const cachedProfile = getFromCache<UserProfile>(CACHE_KEYS.PROFILE)
+      const cachedImages = getFromCache<UserImage[]>(CACHE_KEYS.IMAGES)
+      const cachedMatches = getFromCache<Match[]>(CACHE_KEYS.MATCHES)
+      const cachedDashboardStats = getFromCache<DashboardStats>(CACHE_KEYS.DASHBOARD_STATS)
+      
+      if (cachedProfile) {
+        console.log('Loaded profile from cache')
+        setProfile(cachedProfile)
+      }
+      if (cachedImages) {
+        console.log('Loaded images from cache')
+        setImages(cachedImages)
+      }
+      if (cachedMatches) {
+        console.log('Loaded matches from cache')
+        setMatches(cachedMatches)
+      }
+      if (cachedDashboardStats) {
+        console.log('Loaded dashboard stats from cache')
+        setDashboardStats(cachedDashboardStats)
+      }
+    }
+  }, [isAuthenticated])
+
   // Fetch user profile
   const refreshProfile = useCallback(async () => {
     if (!isAuthenticated || !user?.id) return
@@ -149,6 +186,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
         console.error('Failed to fetch profile:', response.error)
       } else if (response.data) {
         setProfile(response.data)
+        saveToCache(CACHE_KEYS.PROFILE, response.data, 10 * 60 * 1000) // 10 minutes
       }
     } catch (err) {
       console.error('Error fetching profile:', err)
@@ -165,8 +203,10 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
         console.error('Failed to fetch images:', response.error)
       } else if (response.data?.images) {
         setImages(response.data.images)
+        saveToCache(CACHE_KEYS.IMAGES, response.data.images, 10 * 60 * 1000)
       } else {
         setImages([])
+        saveToCache(CACHE_KEYS.IMAGES, [], 10 * 60 * 1000)
       }
     } catch (err) {
       console.error('Error fetching images:', err)
@@ -183,8 +223,10 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
         console.error('Failed to fetch match requests:', response.error)
       } else if (response.data?.requests) {
         setMatchRequests(response.data.requests)
+        saveToCache(CACHE_KEYS.MATCH_REQUESTS, response.data.requests, 5 * 60 * 1000)
       } else {
         setMatchRequests([])
+        saveToCache(CACHE_KEYS.MATCH_REQUESTS, [], 5 * 60 * 1000)
       }
     } catch (err) {
       console.error('Error fetching match requests:', err)
@@ -201,8 +243,10 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
         console.error('Failed to fetch matches:', response.error)
       } else if (response.data?.matches) {
         setMatches(response.data.matches)
+        saveToCache(CACHE_KEYS.MATCHES, response.data.matches, 5 * 60 * 1000)
       } else {
         setMatches([])
+        saveToCache(CACHE_KEYS.MATCHES, [], 5 * 60 * 1000)
       }
     } catch (err) {
       console.error('Error fetching matches:', err)
@@ -219,6 +263,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
         console.error('Failed to fetch dashboard stats:', response.error)
       } else if (response.data) {
         setDashboardStats(response.data)
+        saveToCache(CACHE_KEYS.DASHBOARD_STATS, response.data, 5 * 60 * 1000)
       }
     } catch (err) {
       console.error('Error fetching dashboard stats:', err)
@@ -307,9 +352,12 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
 
   // Initialize data when auth is ready
   useEffect(() => {
-    if (isAuthenticated && !authLoading && !isInitialized) {
+    // Only proceed if auth is not loading
+    if (authLoading) return
+
+    if (isAuthenticated && !isInitialized) {
       refreshAll()
-    } else if (!isAuthenticated && !authLoading) {
+    } else if (!isAuthenticated) {
       // Clear data if not authenticated
       setProfile(null)
       setImages([])

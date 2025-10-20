@@ -31,12 +31,28 @@ export function UserCard({ user, onLike, onReject, onSuperLike, isAnimating }: U
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const router = useRouter()
 
+  // Provide default values to prevent undefined issues
+  const safeUser = {
+    ...user,
+    name: user?.name || 'User',
+    age: user?.age || 0,
+    location: user?.location || 'Unknown',
+    bio: user?.bio || 'No bio available',
+    interests: user?.interests || [],
+    images: user?.images?.filter(img => img) || ['/default.jpg'],
+    profileImage: user?.profileImage || '/default.jpg',
+    compatibility: user?.compatibility || 0,
+    occupation: user?.occupation || 'Not specified',
+    isOnline: user?.isOnline || false,
+    lastSeen: user?.lastSeen || 'Recently'
+  }
+
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % user.images.length)
+    setCurrentImageIndex((prev) => (prev + 1) % safeUser.images.length)
   }
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + user.images.length) % user.images.length)
+    setCurrentImageIndex((prev) => (prev - 1 + safeUser.images.length) % safeUser.images.length)
   }
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -56,16 +72,16 @@ export function UserCard({ user, onLike, onReject, onSuperLike, isAnimating }: U
       {/* Image Section */}
       <div className="relative h-64 sm:h-80 overflow-hidden">
         <Image
-          key={user.images[currentImageIndex]} 
+          key={safeUser.images[currentImageIndex]} 
           width={800}
           height={600}
-          src={user.images[currentImageIndex] || "/default.jpg"}
-          alt={user.name}
+          src={safeUser.images[currentImageIndex] || "/default.jpg"}
+          alt={safeUser.name}
           className="w-full h-full object-cover"
         />
 
         {/* Image navigation */}
-        {user.images.length > 1 && (
+        {safeUser.images.length > 1 && (
           <>
             <button
               onClick={(e) => {
@@ -88,7 +104,7 @@ export function UserCard({ user, onLike, onReject, onSuperLike, isAnimating }: U
 
             {/* Image indicators */}
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-              {user.images.map((_, index) => (
+              {safeUser.images.map((_, index) => (
                 <div
                   key={index}
                   className={`w-2 h-2 rounded-full transition-all duration-300 ${
@@ -102,7 +118,7 @@ export function UserCard({ user, onLike, onReject, onSuperLike, isAnimating }: U
 
         {/* Online status */}
         <div className="absolute top-4 right-4 flex items-center space-x-2 bg-black/50 backdrop-blur-sm rounded-full px-2 sm:px-3 py-1">
-          {user.isOnline ? (
+          {safeUser.isOnline ? (
             <>
               <Wifi className="h-3 w-3 text-green-400" />
               <span className="text-xs text-white font-medium hidden sm:inline">Online</span>
@@ -110,14 +126,14 @@ export function UserCard({ user, onLike, onReject, onSuperLike, isAnimating }: U
           ) : (
             <>
               <WifiOff className="h-3 w-3 text-white/50" />
-              <span className="text-xs text-white/70 hidden sm:inline">{user.lastSeen}</span>
+              <span className="text-xs text-white/70 hidden sm:inline">{safeUser.lastSeen}</span>
             </>
           )}
         </div>
 
         {/* Compatibility badge */}
         <div className="absolute bottom-4 left-4 bg-gradient-to-r from-[#FF0059] to-[#FF0059]/80 rounded-full px-3 sm:px-4 py-1 sm:py-2 shadow-lg shadow-[#FF0059]/25">
-          <span className="text-white font-bold text-xs sm:text-sm">{user.compatibility}% Match</span>
+          <span className="text-white font-bold text-xs sm:text-sm">{safeUser.compatibility}% Match</span>
         </div>
       </div>
 
@@ -127,29 +143,29 @@ export function UserCard({ user, onLike, onReject, onSuperLike, isAnimating }: U
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xl sm:text-2xl font-bold text-white truncate flex-1 mr-2">
-              {user.name}, {user.age}
+              {safeUser.name}{safeUser.age ? `, ${safeUser.age}` : ''}
             </h2>
 
           </div>
 
           <div className="flex items-center text-white/60 text-sm mb-2">
             <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
-            <span className="truncate">{user.location}</span>
+            <span className="truncate">{safeUser.location}</span>
           </div>
 
           <div className="flex items-center text-white/60 text-sm">
             <Briefcase className="h-4 w-4 mr-1 flex-shrink-0" />
-            <span className="truncate">{user.occupation}</span>
+            <span className="truncate">{safeUser.occupation}</span>
           </div>
         </div>
 
         {/* Bio */}
-        <p className="text-white/80 text-sm leading-relaxed mb-4 line-clamp-3">{user.bio}</p>
+        <p className="text-white/80 text-sm leading-relaxed mb-4 line-clamp-3">{safeUser.bio}</p>
 
         {/* Interests */}
         <div className="mb-6">
           <div className="flex flex-wrap gap-2">
-            {user.interests.slice(0, 6).map((interest, index) => (
+            {safeUser.interests.slice(0, 6).map((interest, index) => (
               <span
                 key={index}
                 className="px-2 sm:px-3 py-1 bg-[#FF0059]/20 border border-[#FF0059]/30 text-[#FF0059] text-xs font-medium rounded-full"
@@ -157,9 +173,9 @@ export function UserCard({ user, onLike, onReject, onSuperLike, isAnimating }: U
                 {interest}
               </span>
             ))}
-            {user.interests.length > 6 && (
+            {safeUser.interests.length > 6 && (
               <span className="px-2 sm:px-3 py-1 bg-white/10 border border-white/20 text-white/60 text-xs font-medium rounded-full">
-                +{user.interests.length - 6} more
+                +{safeUser.interests.length - 6} more
               </span>
             )}
           </div>

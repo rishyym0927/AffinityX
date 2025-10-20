@@ -14,6 +14,7 @@ export function RequestsList() {
   
   // Get data from context
   const { matchRequests, isLoading, error, refreshMatchRequests, removeMatchRequest } = useUserData()
+  const safeRequests = Array.isArray(matchRequests) ? matchRequests : []
 
   const handleAccept = async (request: any) => {
     if (processingId) return
@@ -85,7 +86,7 @@ export function RequestsList() {
     >
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-white">Incoming Requests</h3>
-        <span className="text-sm text-white/60">{activeRequests.length} pending</span>
+  <span className="text-sm text-white/60">{safeRequests.length} pending</span>
       </div>
 
       {/* Loading State */}
@@ -111,7 +112,7 @@ export function RequestsList() {
         </div>
       ) : (
         <div className="space-y-6">
-          {activeRequests.map((request, index) => (
+          {safeRequests.map((request, index) => (
             <motion.div
               key={request.id}
               initial={{ opacity: 0, y: 20 }}
@@ -124,7 +125,7 @@ export function RequestsList() {
                 <div className="flex-shrink-0 mx-auto sm:mx-0">
                   <img
                     src={request.image || "/default.jpg"}
-                    alt={request.name}
+                    alt={request.name || 'Requester'}
                     className="w-24 h-24 rounded-2xl object-cover border-2 border-white/20"
                   />
                 </div>
@@ -134,11 +135,11 @@ export function RequestsList() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3">
                     <div>
                       <h4 className="text-xl font-semibold text-white mb-1">
-                        {request.name}, {request.age}
+                        {request.name || 'Unknown'}, {request.age || ''}
                       </h4>
                       <div className="flex items-center justify-center sm:justify-start gap-1 mb-2">
                         <MapPin className="h-4 w-4 text-white/50" />
-                        <span className="text-sm text-white/60">{request.location}</span>
+                        <span className="text-sm text-white/60">{request.location || ''}</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-center sm:justify-end gap-2">
@@ -149,11 +150,11 @@ export function RequestsList() {
                     </div>
                   </div>
 
-                  <p className="text-white/70 text-sm leading-relaxed mb-4">{request.bio}</p>
+                  <p className="text-white/70 text-sm leading-relaxed mb-4">{request.bio || ''}</p>
 
                   {/* Interests */}
                   <div className="flex flex-wrap justify-center sm:justify-start gap-2 mb-4">
-                    {request.interests.map((interest, idx) => (
+                    {(request.interests || []).map((interest, idx) => (
                       <span
                         key={idx}
                         className="px-2 py-1 bg-[#FF0059]/20 border border-[#FF0059]/30 text-[#FF0059] text-xs font-medium rounded-lg"
