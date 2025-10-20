@@ -3,7 +3,7 @@ import { HeroSection } from "@/components/hero-section"
 import { FeaturesGrid } from "@/components/features-grid"
 import { CTASection } from "@/components/cta-section"
 import { TechStack } from "@/components/tech-stack"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 

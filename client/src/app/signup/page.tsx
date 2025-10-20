@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowRight, ArrowLeft, Eye, EyeOff, Upload, Check, X, AlertCircle } from "lucide-react"
 import { useState, type KeyboardEvent } from "react"
 import Link from "next/link"
-import { useAuth, type SignupData } from "@/contexts/auth-context"
+import { useAuth, type SignupData } from "@/hooks/use-auth"
 import { PublicRoute } from "@/components/auth/public-route"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"

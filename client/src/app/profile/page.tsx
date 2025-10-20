@@ -15,6 +15,34 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("overview")
   const { profile, isLoading, error } = useUserData()
 
+  // Convert User to UserProfile format for components
+  const userProfile = profile ? {
+    id: parseInt(profile.id) || 0,
+    ID: parseInt(profile.id) || 0,
+    Name: profile.name,
+    name: profile.name,
+    Age: profile.age || 0,
+    age: profile.age || 0,
+    City: profile.city || '',
+    city: profile.city || '',
+    Gender: profile.gender || '',
+    gender: profile.gender || '',
+    Lat: profile.lat || 0,
+    lat: profile.lat || 0,
+    Lon: profile.lon || 0,
+    lon: profile.lon || 0,
+    Communication: profile.communication || 0,
+    communication: profile.communication || 0,
+    Confidence: profile.confidence || 0,
+    confidence: profile.confidence || 0,
+    Emotional: profile.emotional || 0,
+    emotional: profile.emotional || 0,
+    Personality: profile.personality || 0,
+    personality: profile.personality || 0,
+    TotalScore: profile.totalScore || 0,
+    totalScore: profile.totalScore || 0,
+  } : null
+
   // Listen for gallery tab open event
   useEffect(() => {
     const handleOpenGallery = () => {
@@ -88,7 +116,7 @@ export default function ProfilePage() {
         <main className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           {/* Profile Header */}
-          <ProfileHeader userProfile={profile} />
+          <ProfileHeader userProfile={userProfile} />
 
           {/* Tab Navigation */}
           <motion.div
@@ -127,10 +155,10 @@ export default function ProfilePage() {
             {activeTab === "overview" && (
               <div className="flex flex-wrap gap-6 lg:gap-8">
                 <div className="w-full lg:w-80 xl:w-96 flex-shrink-0">
-                  <ProfileStats userProfile={profile} />
+                  <ProfileStats userProfile={userProfile} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <ProfileInfo userProfile={profile} />
+                  <ProfileInfo userProfile={userProfile} />
                 </div>
               </div>
             )}

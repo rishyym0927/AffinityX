@@ -1,19 +1,11 @@
-/**
- * API utility functions for making authenticated requests to the backend
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                /**
+ * Enhanced API utility with better error handling and debugging
  */
 
+import { logger } from './logger'
+import { toast } from './toast'
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-
-// Enable detailed logging for debugging
-const DEBUG = process.env.NODE_ENV === 'development'
-
-const log = (...args: any[]) => {
-  if (DEBUG) console.log('[API]', ...args)
-}
-
-const logError = (...args: any[]) => {
-  console.error('[API Error]', ...args)
-}
 
 /**
  * Get the auth token from localStorage
@@ -21,7 +13,7 @@ const logError = (...args: any[]) => {
 export const getAuthToken = (): string | null => {
   if (typeof window === 'undefined') return null
   const token = localStorage.getItem('auth_token')
-  log('Auth token check:', token ? `Token exists (${token.substring(0, 20)}...)` : 'No token found')
+  logger.debug('Auth token check:', token ? 'Token exists' : 'No token found')
   return token
 }
 
@@ -37,10 +29,7 @@ export const getUserId = (): string | null => {
  * Check if user is authenticated
  */
 export const isAuthenticated = (): boolean => {
-  const hasToken = !!getAuthToken()
-  const hasUserId = !!getUserId()
-  log('isAuthenticated check:', { hasToken, hasUserId })
-  return hasToken && hasUserId
+  return !!getAuthToken() && !!getUserId()
 }
 
 /**
@@ -48,27 +37,15 @@ export const isAuthenticated = (): boolean => {
  */
 export const clearAuth = (): void => {
   if (typeof window === 'undefined') return
-  log('Clearing authentication data')
   localStorage.removeItem('auth_token')
   localStorage.removeItem('user_id')
   localStorage.removeItem('user_email')
   localStorage.removeItem('user_name')
+  logger.log('Authentication cleared')
 }
 
 /**
- * Set authentication data
- */
-export const setAuth = (token: string, userId: string | number, email?: string, name?: string): void => {
-  if (typeof window === 'undefined') return
-  log('Setting authentication data', { userId, email, name })
-  localStorage.setItem('auth_token', token)
-  localStorage.setItem('user_id', userId.toString())
-  if (email) localStorage.setItem('user_email', email)
-  if (name) localStorage.setItem('user_name', name)
-}
-
-/**
- * Make an authenticated API request with retry logic
+ * Make an authenticated API request with retry logic and better error handling
  */
 export async function apiRequest<T = any>(
   endpoint: string,
@@ -76,11 +53,9 @@ export async function apiRequest<T = any>(
   retries: number = 2
 ): Promise<{ data?: T; error?: string }> {
   const token = getAuthToken()
-  const userId = getUserId()
   
-  log(`Making ${options.method || 'GET'} request to ${endpoint}`)
-  log(`Auth token: ${token ? 'Present' : 'Missing'}`)
-  log(`User ID: ${userId || 'Missing'}`)
+  // Log API call for debugging
+  logger.api(options.method || 'GET', endpoint, options.body ? 'with body' : '')
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -95,103 +70,119 @@ export async function apiRequest<T = any>(
     })
   }
 
+  // Add auth token if available
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
-    log('Authorization header added')
   } else {
-    log('WARNING: No auth token available for authenticated endpoint')
+    logger.warn('API request without auth token:', endpoint)
   }
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const url = `${API_BASE_URL}${endpoint}`
-      log(`Attempt ${attempt + 1}/${retries + 1}: Fetching ${url}`)
-      
-      const response = await fetch(url, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers,
-        mode: 'cors',
-        credentials: 'omit',
+        credentials: 'omit', // Don't send cookies
       })
 
       // Handle empty responses
       const contentType = response.headers.get('content-type')
       const hasJsonContent = contentType && contentType.includes('application/json')
 
-      log(`Response status: ${response.status}`)
-      log(`Response content-type: ${contentType}`)
-
       if (!response.ok) {
         let errorText = `Request failed with status ${response.status}`
-        let errorDetails = ''
         
         // Try to get error message from response
         if (hasJsonContent) {
           try {
             const errorData = await response.json()
             errorText = errorData.error || errorData.message || errorText
-            errorDetails = JSON.stringify(errorData)
           } catch {
             try {
               errorText = await response.text() || errorText
-              errorDetails = errorText
             } catch {
-              // Ignore
+              // Ignore text parse errors
             }
           }
         } else {
           try {
             errorText = await response.text() || errorText
-            errorDetails = errorText
           } catch {
-            // Ignore
+            // Ignore text parse errors
           }
         }
         
-        logError(`${options.method || 'GET'} ${endpoint} failed:`, response.status, errorText)
-        if (errorDetails) logError('Error details:', errorDetails)
+        logger.error(`API Error [${response.status}]:`, endpoint, errorText)
         
-        // Don't retry on auth errors (401, 403)
-        if (response.status === 401 || response.status === 403) {
-          logError('Authentication error - clearing token')
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('auth_token')
-            localStorage.removeItem('user_id')
-          }
-          return { error: errorText }
+        // Handle specific error codes
+        switch (response.status) {
+          case 401:
+          case 403:
+            // Unauthorized - clear auth and don't retry
+            logger.warn('Authentication failed, clearing tokens')
+            clearAuth()
+            toast.error('Session Expired', 'Please log in again')
+            // Optionally redirect to login
+            if (typeof window !== 'undefined') {
+              setTimeout(() => {
+                window.location.href = '/login'
+              }, 1500)
+            }
+            return { error: 'Authentication required' }
+          
+          case 404:
+            // Not found - don't retry
+            return { error: errorText }
+          
+          case 429:
+            // Rate limited - retry with longer delay
+            if (attempt < retries) {
+              const delay = Math.min(2000 * Math.pow(2, attempt), 10000)
+              logger.warn(`Rate limited, retrying in ${delay}ms...`)
+              await new Promise(resolve => setTimeout(resolve, delay))
+              continue
+            }
+            return { error: 'Too many requests. Please try again later.' }
+          
+          case 500:
+          case 502:
+          case 503:
+          case 504:
+            // Server errors - retry
+            if (attempt < retries) {
+              const delay = Math.min(1000 * Math.pow(2, attempt), 5000)
+              logger.warn(`Server error ${response.status}, retrying in ${delay}ms...`)
+              await new Promise(resolve => setTimeout(resolve, delay))
+              continue
+            }
+            return { error: 'Server error. Please try again later.' }
+          
+          default:
+            return { error: errorText }
         }
-        
-        // Retry on server errors (500+) and rate limits (429)
-        if (attempt < retries && (response.status >= 500 || response.status === 429)) {
-          const delay = Math.min(1000 * Math.pow(2, attempt), 5000) // Exponential backoff
-          log(`Retrying in ${delay}ms...`)
-          await new Promise(resolve => setTimeout(resolve, delay))
-          continue
-        }
-        
-        return { error: errorText }
       }
 
       // Handle empty successful responses
       if (!hasJsonContent || response.status === 204) {
-        log('Empty success response')
         return { data: {} as T }
       }
 
       const data = await response.json()
-      log('Success:', data)
+      logger.debug('API Success:', endpoint, data)
       return { data }
+      
     } catch (error) {
-      logError(`API request error (attempt ${attempt + 1}/${retries + 1}):`, error)
+      logger.error(`API request error (attempt ${attempt + 1}/${retries + 1}):`, error)
       
       // Retry on network errors
       if (attempt < retries) {
         const delay = Math.min(1000 * Math.pow(2, attempt), 5000)
-        log(`Retrying in ${delay}ms...`)
+        logger.warn(`Network error, retrying in ${delay}ms...`)
         await new Promise(resolve => setTimeout(resolve, delay))
         continue
       }
       
+      toast.error('Network Error', 'Please check your connection')
       return { error: 'Network error. Please check your connection and try again.' }
     }
   }
@@ -233,7 +224,7 @@ export const api = {
       const data = await response.json()
       return { exists: data.exists || false }
     } catch (error) {
-      console.error('Email check error:', error)
+      logger.error('Email check error:', error)
       return { exists: false, error: 'Network error' }
     }
   },
@@ -309,6 +300,7 @@ export const api = {
     }).then(async (res) => {
       if (!res.ok) {
         const error = await res.text()
+        logger.error('Image upload failed:', error)
         return { error }
       }
       return { data: await res.json() }

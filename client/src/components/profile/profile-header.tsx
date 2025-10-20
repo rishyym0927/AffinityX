@@ -6,22 +6,22 @@ import { Camera, Edit3, Share, MapPin, Briefcase, Calendar, Verified } from "luc
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import { api } from "@/lib/api"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/hooks/use-auth"
 
 // User profile interface to match actual API response
 interface UserProfile {
-  ID: number
-  Name: string
-  Age: number
-  City: string
-  Gender: string
-  Lat: number
-  Lon: number
-  Communication: number
-  Confidence: number
-  Emotional: number
-  Personality: number
-  TotalScore: number
+  id: number
+  name: string
+  age: number
+  city: string
+  gender: string
+  lat: number
+  lon: number
+  communication: number
+  confidence: number
+  emotional: number
+  personality: number
+  totalScore: number
 }
 
 interface UserImage {
@@ -44,14 +44,14 @@ export function ProfileHeader({ userProfile }: ProfileHeaderProps) {
 
   // Get name from localStorage as immediate fallback
   const storedName = typeof window !== 'undefined' ? localStorage.getItem('user_name') : null
-  
+  console.log("UserProfile in ProfileHeader:", userProfile, user)
   // Use auth context user as fallback for immediate display
-  const displayName = userProfile?.Name || user?.name || storedName || "Loading..."
-  const displayAge = userProfile?.Age || user?.age
-  const displayCity = userProfile?.City || user?.city || "Loading..."
-  const displayGender = userProfile?.Gender || user?.gender || ""
-  const displayTotalScore = userProfile?.TotalScore || user?.totalScore || 0
-  
+  const displayName = userProfile?.name || user?.name || storedName || "Loading..."
+  const displayAge = userProfile?.age || user?.age
+  const displayCity = userProfile?.city || user?.city || "Loading..."
+  const displayGender = userProfile?.gender || user?.gender || ""
+  const displayTotalScore = userProfile?.totalScore || user?.totalScore || 0
+
   // Determine if data is still loading
   const isLoading = !userProfile && !user
 

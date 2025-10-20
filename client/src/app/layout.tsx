@@ -3,10 +3,10 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { Footer } from "@/components/footer"
-import { AuthProvider } from "@/contexts/auth-context"
-import { RecommendationsProvider } from "@/contexts/recommendations-context"
-import { UserDataProvider } from "@/contexts/user-data-context"
-import { Toaster } from "@/components/ui/toast"
+import Providers from '@/components/providers'
+import { Toaster } from "sonner"
+import { ErrorBoundary } from "@/components/error-boundary"
+import { DebugPanel } from "@/components/debug-panel"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -31,15 +31,27 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={inter.className}>
-        <AuthProvider>
-          <UserDataProvider>
-            <RecommendationsProvider>
-              {children}
-              <Footer />
-              <Toaster />
-            </RecommendationsProvider>
-          </UserDataProvider>
-        </AuthProvider>
+        <ErrorBoundary>
+          <Providers>
+            {children}
+            <Footer />
+            <DebugPanel />
+            <Toaster 
+              theme="dark" 
+              position="top-right"
+              richColors
+              closeButton
+              duration={3000}
+              toastOptions={{
+                style: {
+                  background: 'rgba(0, 0, 0, 0.9)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                },
+              }}
+            />
+          </Providers>
+        </ErrorBoundary>
       </body>
     </html>
   )

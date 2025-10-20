@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Search, MessageCircle, Heart, UserCheck, User, Bell, Settings, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/hooks/use-auth"
 import { useState, useEffect, useRef } from "react"
 import { api } from "@/lib/api"
 import Image from "next/image"
@@ -25,6 +25,7 @@ export function DashboardNav() {
   const [primaryImage, setPrimaryImage] = useState<string>("/default.jpg")
   const [isLoadingImage, setIsLoadingImage] = useState(true)
   const userMenuRef = useRef<HTMLDivElement>(null)
+  // console.log("DashboardNav user:", user)
 
   // Fetch user's primary image
   useEffect(() => {
