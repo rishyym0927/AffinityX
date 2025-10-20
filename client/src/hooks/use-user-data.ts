@@ -37,15 +37,24 @@ export function useUserData() {
   const refreshMatches = async () => {
     await context.fetchMatches()
   }
+
+  // Add helper method for match requests
+  const refreshMatchRequests = async () => {
+    await context.fetchMatchRequests()
+  }
   
   return {
     ...context,
     // Alias user as profile for compatibility
     profile: context.user,
+    // Alias request_stats as requestStats for compatibility
+    requestStats: context.stats?.request_stats,
+    activityStats: context.stats?.activity_stats,
     // Add helper methods
     refreshImages,
     removeImage,
     updateImage,
     refreshMatches,
+    refreshMatchRequests,
   }
 }

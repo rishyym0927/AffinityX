@@ -103,6 +103,14 @@ export interface Candidate {
   match_score: number
 }
 
+export interface RecommendationFilters {
+  gender?: 'M' | 'F'
+  age_min?: number
+  age_max?: number
+  limit?: number
+  min_score?: number
+}
+
 // ============================================================================
 // CONTEXT TYPE
 // ============================================================================
@@ -119,6 +127,7 @@ export interface AppContextType {
   matches: Match[]
   stats: DashboardStats | null
   recommendations: Candidate[]
+  currentFilters: RecommendationFilters
   
   // Aliases for compatibility
   dashboardStats?: DashboardStats | null
@@ -138,6 +147,7 @@ export interface AppContextType {
   fetchMatches: () => Promise<void>
   fetchStats: () => Promise<void>
   fetchRecommendations: (filters?: any, append?: boolean) => Promise<void>
+  updateFilters: (filters: RecommendationFilters) => void
   refreshAll: () => Promise<void>
   refreshRecommendations?: () => Promise<void>
   rejectUser?: (userId: number) => Promise<void>
@@ -179,6 +189,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [matches, setMatches] = useState<Match[]>([])
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recommendations, setRecommendations] = useState<Candidate[]>([])
+  const [currentFilters, setCurrentFilters] = useState<RecommendationFilters>({ limit: 10 })
   const [error, setError] = useState<string | null>(null)
 
   const isAuthenticated = !!user
@@ -571,6 +582,40 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setRecommendations(prev => prev.filter(c => c.user.id !== userId))
   }, [])
 
+  const updateFilters = useCallback(async (filters: RecommendationFilters) => {
+    logger.log('Updating recommendation filters:', filters)
+    setCurrentFilters(filters)
+    
+    // Immediately fetch recommendations with new filters
+    if (isAuthenticated) {
+      try {
+        setError(null)
+        logger.log('Fetching recommendations with new filters:', filters)
+        
+        const response = await api.getRecommendations(filters || { limit: 20 })
+        
+        if (response.error) {
+          logger.error('Recommendations fetch error:', response.error)
+          setError(response.error)
+          setRecommendations([])
+          return
+        }
+        
+        if (response.data?.candidates && Array.isArray(response.data.candidates)) {
+          logger.log('Recommendations received:', response.data.candidates.length)
+          setRecommendations(response.data.candidates)
+        } else {
+          logger.warn('No candidates in response')
+          setRecommendations([])
+        }
+      } catch (error) {
+        logger.error('Error fetching recommendations:', error)
+        setError('Failed to fetch recommendations')
+        setRecommendations([])
+      }
+    }
+  }, [isAuthenticated])
+
   // ============================================================================
   // INITIALIZATION
   // ============================================================================
@@ -667,6 +712,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     matches,
     stats,
     recommendations,
+    currentFilters,
     
     // Aliases for compatibility
     dashboardStats: stats,
@@ -686,6 +732,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     fetchMatches,
     fetchStats,
     fetchRecommendations,
+    updateFilters,
     refreshAll,
     refreshRecommendations,
     rejectUser,
