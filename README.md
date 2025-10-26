@@ -32,6 +32,18 @@ AffinityX is built as a microservices ecosystem:
 - API endpoints thoroughly documented for rapid integration.
 - Environment variables for secure, scalable deployment.
 
+## Screenshots
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/71fb3a2e-b6a4-4cf8-a56e-2c617deb0e00" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/82293137-4966-45d3-aacc-795ece254c7d" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/2f2da37a-98b7-440f-ab43-b1c612ce1c8a" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3d9aef80-7f2d-4b7a-9cdd-3cd6e5245581" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f9f706b9-eb18-48c1-8131-551f64a7568e" />
+
+
+
+
+
+
 ## 🤝 Get Involved
 
 We welcome contributions! Fork the repo, create a feature branch, and submit your PR. Whether you’re passionate about AI, UX/UI, or backend engineering, your ideas can help shape AffinityX.
